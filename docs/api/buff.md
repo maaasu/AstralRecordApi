@@ -11,6 +11,14 @@
 | メソッド | GET |
 | パス | `/api/buff/{buffId}` |
 
+## 認証
+
+すべてのリクエストに `X-Api-Key` ヘッダーが必要です。
+
+| ヘッダー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `X-Api-Key` | string | ✓ | API キー |
+
 ## リクエスト
 
 ### パスパラメータ
@@ -21,6 +29,7 @@
 
 ```http
 GET /api/buff/haste_small
+X-Api-Key: <your-api-key>
 ```
 
 ## レスポンス
@@ -65,6 +74,10 @@ GET /api/buff/haste_small
 | `modifiers[].status` | string | 対象ステータス |
 | `modifiers[].type` | string | 変動タイプ（`SCALAR` / `FLAT`） |
 | `modifiers[].value` | number | 変動量 |
+
+### 401 Unauthorized
+
+API キーが指定されていない、または無効。
 
 ### 404 Not Found
 

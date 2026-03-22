@@ -11,12 +11,21 @@
 | メソッド | GET |
 | パス | `/api/health` |
 
+## 認証
+
+すべてのリクエストに `X-Api-Key` ヘッダーが必要です。
+
+| ヘッダー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `X-Api-Key` | string | ✓ | API キー |
+
 ## リクエスト
 
 パラメータなし。
 
 ```http
 GET /api/health
+X-Api-Key: <your-api-key>
 ```
 
 ## レスポンス
@@ -38,3 +47,7 @@ API サーバーへの接続成功。
 | `status` | string | 常に `"ok"` |
 | `service` | string | サービス名 |
 | `timestamp` | string (ISO 8601) | レスポンス生成時刻 (UTC) |
+
+### 401 Unauthorized
+
+API キーが指定されていない、または無効。

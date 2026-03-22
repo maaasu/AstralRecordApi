@@ -11,6 +11,14 @@
 | メソッド | GET |
 | パス | `/api/item/{category}/{itemId}` |
 
+## 認証
+
+すべてのリクエストに `X-Api-Key` ヘッダーが必要です。
+
+| ヘッダー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `X-Api-Key` | string | ✓ | API キー |
+
 ## リクエスト
 
 ### パスパラメータ
@@ -33,6 +41,7 @@
 
 ```http
 GET /api/item/material/iron_ingot
+X-Api-Key: <your-api-key>
 ```
 
 ```json
@@ -58,6 +67,7 @@ GET /api/item/material/iron_ingot
 
 ```http
 GET /api/item/consumable/haste_potion_small
+X-Api-Key: <your-api-key>
 ```
 
 ```json
@@ -115,6 +125,10 @@ GET /api/item/consumable/haste_potion_small
 ### 400 Bad Request
 
 未対応カテゴリを指定。
+
+### 401 Unauthorized
+
+API キーが指定されていない、または無効。
 
 ### 404 Not Found
 
