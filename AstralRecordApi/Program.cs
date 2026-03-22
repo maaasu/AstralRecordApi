@@ -1,5 +1,6 @@
 using AstralRecordApi.Options;
 using AstralRecordApi.Repositories;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,16 +14,22 @@ builder.Services.AddSingleton<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Astral Record API";
+        document.Info.Version = "v1";
+        document.Info.Description = "Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record の Web API";
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// Scalar API ドキュメント UI (/scalar)
+app.MapOpenApi();
+app.MapScalarApiReference("/scalar");
 
 app.UseHttpsRedirection();
 
