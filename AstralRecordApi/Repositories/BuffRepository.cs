@@ -41,8 +41,16 @@ public class BuffRepository : IBuffRepository
         foreach (var filePath in Directory.EnumerateFiles(buffRootPath, "*.yml", SearchOption.TopDirectoryOnly))
         {
             var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath);
-            var yamlBuff = deserializer.Deserialize<BuffYamlDocument>(yaml)
-                ?? throw new InvalidOperationException($"Failed to deserialize buff YAML: {filePath}");
+            BuffYamlDocument yamlBuff;
+            try
+            {
+                yamlBuff = deserializer.Deserialize<BuffYamlDocument>(yaml)
+                    ?? throw new InvalidOperationException($"Failed to deserialize buff YAML (null result): {filePath}");
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                throw new InvalidOperationException($"Failed to deserialize buff YAML: {filePath}", ex);
+            }
 
             var buff = yamlBuff.ToResponse(filePath);
             if (!buffs.TryAdd(buff.Id, buff))

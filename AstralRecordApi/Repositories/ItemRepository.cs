@@ -58,8 +58,16 @@ public class ItemRepository : IItemRepository
             foreach (var filePath in Directory.EnumerateFiles(categoryPath, "*.yml", SearchOption.TopDirectoryOnly))
             {
                 var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath);
-                var yamlItem = deserializer.Deserialize<ItemYamlDocument>(yaml)
-                    ?? throw new InvalidOperationException($"Failed to deserialize item YAML: {filePath}");
+                ItemYamlDocument yamlItem;
+                try
+                {
+                    yamlItem = deserializer.Deserialize<ItemYamlDocument>(yaml)
+                        ?? throw new InvalidOperationException($"Failed to deserialize item YAML (null result): {filePath}");
+                }
+                catch (Exception ex) when (ex is not InvalidOperationException)
+                {
+                    throw new InvalidOperationException($"Failed to deserialize item YAML: {filePath}", ex);
+                }
 
                 var item = yamlItem.ToResponse(filePath, category);
                 if (!items.TryAdd(item.Id, item))
@@ -74,7 +82,8 @@ public class ItemRepository : IItemRepository
 
     private static string ReadYamlWithNormalizedAmpersandScalars(string filePath)
     {
-        var lines = File.ReadAllLines(filePath);
+        var rawLines = File.ReadAllLines(filePath);
+        var lines = NormalizeRefObjects(rawLines);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -83,6 +92,48 @@ public class ItemRepository : IItemRepository
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// YAML の参照オブジェクト形式（ref: type:id）をフラットなスカラーに正規化する。
+    /// 例:
+    ///   buffId:          buffId: cure_poison
+    ///     ref: buff:cure_poison
+    /// </summary>
+    private static string[] NormalizeRefObjects(string[] lines)
+    {
+        var result = new List<string>(lines.Length);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+            var trimmed = line.TrimStart();
+
+            // 値なしのキー行（例: "      buffId:"）を検出
+            if (trimmed.EndsWith(':') && !trimmed.StartsWith('-') && !trimmed.StartsWith('#'))
+            {
+                // 次の行が ref パターン（例: "        ref: buff:cure_poison"）か確認
+                if (i + 1 < lines.Length)
+                {
+                    var nextTrimmed = lines[i + 1].TrimStart();
+                    if (nextTrimmed.StartsWith("ref: ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var refValue = nextTrimmed["ref: ".Length..].Trim();
+                        // "type:id" 形式から id 部分を抽出（例: buff:cure_poison → cure_poison）
+                        var colonIdx = refValue.LastIndexOf(':');
+                        var id = colonIdx >= 0 ? refValue[(colonIdx + 1)..].Trim() : refValue;
+
+                        var indent = line[..(line.Length - trimmed.Length)];
+                        var key = trimmed.TrimEnd(':');
+                        result.Add($"{indent}{key}: {id}");
+                        i++; // ref 行をスキップ
+                        continue;
+                    }
+                }
+            }
+
+            result.Add(line);
+        }
+        return result.ToArray();
     }
 
     private static string NormalizeAmpersandScalar(string line)

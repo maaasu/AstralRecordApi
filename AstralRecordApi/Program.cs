@@ -1,7 +1,9 @@
 using AstralRecordApi.Authentication;
+using AstralRecordApi.Data;
 using AstralRecordApi.Options;
 using AstralRecordApi.Repositories;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
@@ -11,6 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<FileDatabaseOptions>(
     builder.Configuration.GetSection(FileDatabaseOptions.SectionName));
+
+builder.Services.AddDbContext<AstralRecordDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("SqlServer")
+        ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured.")));
 
 builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
 builder.Services.AddSingleton<IItemRepository, ItemRepository>();
@@ -34,7 +41,8 @@ builder.Services.AddOpenApi(options =>
 
         // API キー認証スキームを OpenAPI ドキュメントに追加
         document.Components ??= new OpenApiComponents();
-        document.Components!.SecuritySchemes![ApiKeyAuthenticationHandler.SchemeName] = new OpenApiSecurityScheme
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes[ApiKeyAuthenticationHandler.SchemeName] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.ApiKey,
             In = ParameterLocation.Header,
@@ -42,7 +50,8 @@ builder.Services.AddOpenApi(options =>
             Description = "リクエストヘッダー `X-Api-Key` に API キーを指定してください。"
         };
 
-        document.Security!.Add(new OpenApiSecurityRequirement
+        document.Security ??= [];
+        document.Security.Add(new OpenApiSecurityRequirement
         {
             [new OpenApiSecuritySchemeReference(ApiKeyAuthenticationHandler.SchemeName, document)] = []
         });
@@ -53,9 +62,18 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
-// Scalar API ドキュメント UI (/scalar)
+// OpenAPI ドキュメント (/openapi/v1.json)
 app.MapOpenApi();
+
+// Scalar API ドキュメント UI (/scalar)
 app.MapScalarApiReference("/scalar");
+
+// Swagger UI (/swagger)
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/openapi/v1.json", "Astral Record API v1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
 
