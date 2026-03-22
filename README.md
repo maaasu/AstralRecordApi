@@ -30,6 +30,7 @@ Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record と関
 | GET /api/user/{uuid} | ユーザー情報取得 | [docs/api/user.md](docs/api/user.md) |
 | POST /api/user | ユーザー登録 | [docs/api/user.md](docs/api/user.md) |
 | PUT /api/user/{uuid} | ユーザー情報更新 | [docs/api/user.md](docs/api/user.md) |
+| GET /api/account?user_id={user_id} | ユーザーのアカウント一覧取得 | [docs/api/account.md](docs/api/account.md) |
 | GET /api/account/{uuid} | アカウント情報取得 | [docs/api/account.md](docs/api/account.md) |
 | POST /api/account | アカウント登録 | [docs/api/account.md](docs/api/account.md) |
 | PUT /api/account/{uuid} | アカウント情報更新 | [docs/api/account.md](docs/api/account.md) |

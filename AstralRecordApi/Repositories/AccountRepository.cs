@@ -1,101 +1,93 @@
+using AstralRecordApi.Data;
+using AstralRecordApi.Data.Entities;
 using AstralRecordApi.Models;
-using Dapper;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace AstralRecordApi.Repositories;
 
-public class AccountRepository(IConfiguration configuration) : IAccountRepository
+public class AccountRepository(AstralRecordDbContext dbContext) : IAccountRepository
 {
-    private readonly string _connectionString =
-        configuration.GetConnectionString("SqlServer")
-        ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured.");
+    public async Task<IReadOnlyList<AccountResponse>> GetByUserIdAsync(Guid userId)
+    {
+        var accounts = await dbContext.Accounts
+            .AsNoTracking()
+            .Where(x => x.UserId == userId && !x.IsDeleted)
+            .OrderBy(x => x.SlotIndex)
+            .ToListAsync();
 
-    private const string SelectColumns = """
-        SELECT
-            [uuid]         AS Uuid,
-            [user_id]      AS UserId,
-            [account_name] AS AccountName,
-            [slot_index]   AS SlotIndex,
-            [is_active]    AS IsActive,
-            [mode]         AS Mode,
-            [created_at]   AS CreatedAt,
-            [updated_at]   AS UpdatedAt,
-            [created_by]   AS CreatedBy,
-            [updated_by]   AS UpdatedBy,
-            [is_deleted]   AS IsDeleted
-        FROM [dbo].[account]
-        """;
+        return accounts.Select(MapToResponse).ToList();
+    }
 
     public async Task<AccountResponse?> GetByUuidAsync(Guid uuid)
     {
-        var sql = $"""
-            {SelectColumns}
-            WHERE [uuid] = @Uuid
-              AND [is_deleted] = 0
-            """;
+        var account = await dbContext.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Uuid == uuid && !x.IsDeleted);
 
-        await using var connection = new SqlConnection(_connectionString);
-        return await connection.QuerySingleOrDefaultAsync<AccountResponse>(sql, new { Uuid = uuid });
+        return account is null ? null : MapToResponse(account);
     }
 
     public async Task<AccountResponse> CreateAsync(AccountCreateRequest request)
     {
-        var newUuid = Guid.NewGuid();
         var now = DateTime.UtcNow;
-        const string sql = """
-            INSERT INTO [dbo].[account] (
-                [uuid], [user_id], [account_name], [slot_index], [mode],
-                [created_at], [updated_at], [created_by], [updated_by]
-            ) VALUES (
-                @Uuid, @UserId, @AccountName, @SlotIndex, @Mode,
-                @Now, @Now, @CreatedBy, @CreatedBy
-            );
-            """;
-
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.ExecuteAsync(sql, new
+        var account = new AccountEntity
         {
-            Uuid = newUuid,
-            request.UserId,
-            request.AccountName,
-            request.SlotIndex,
-            request.Mode,
-            Now = now,
-            request.CreatedBy,
-        });
+            Uuid = Guid.NewGuid(),
+            UserId = request.UserId,
+            AccountName = request.AccountName,
+            SlotIndex = request.SlotIndex,
+            Mode = request.Mode,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+            CreatedBy = request.CreatedBy,
+            UpdatedBy = request.CreatedBy,
+            IsDeleted = false,
+        };
 
-        return (await GetByUuidAsync(newUuid))!;
+        await dbContext.Accounts.AddAsync(account);
+        await dbContext.SaveChangesAsync();
+
+        return MapToResponse(account);
     }
 
     public async Task<AccountResponse?> UpdateAsync(Guid uuid, AccountUpdateRequest request)
     {
-        var now = DateTime.UtcNow;
-        const string sql = """
-            UPDATE [dbo].[account]
-            SET
-                [account_name] = COALESCE(@AccountName, [account_name]),
-                [is_active]    = COALESCE(@IsActive, [is_active]),
-                [mode]         = COALESCE(@Mode, [mode]),
-                [updated_at]   = @Now,
-                [updated_by]   = @UpdatedBy
-            WHERE [uuid] = @Uuid
-              AND [is_deleted] = 0;
-            """;
+        var account = await dbContext.Accounts
+            .FirstOrDefaultAsync(x => x.Uuid == uuid && !x.IsDeleted);
 
-        await using var connection = new SqlConnection(_connectionString);
-        var affected = await connection.ExecuteAsync(sql, new
-        {
-            Uuid = uuid,
-            request.AccountName,
-            request.IsActive,
-            request.Mode,
-            Now = now,
-            request.UpdatedBy,
-        });
-
-        if (affected == 0)
+        if (account is null)
             return null;
 
-        return await GetByUuidAsync(uuid);
+        if (request.AccountName is not null)
+            account.AccountName = request.AccountName;
+
+        if (request.IsActive.HasValue)
+            account.IsActive = request.IsActive.Value;
+
+        if (request.Mode.HasValue)
+            account.Mode = request.Mode.Value;
+
+        account.UpdatedAt = DateTime.UtcNow;
+        account.UpdatedBy = request.UpdatedBy;
+
+        await dbContext.SaveChangesAsync();
+
+        return MapToResponse(account);
     }
+
+    private static AccountResponse MapToResponse(AccountEntity account) => new()
+    {
+        Uuid = account.Uuid,
+        UserId = account.UserId,
+        AccountName = account.AccountName,
+        SlotIndex = account.SlotIndex,
+        IsActive = account.IsActive,
+        Mode = account.Mode,
+        CreatedAt = account.CreatedAt,
+        UpdatedAt = account.UpdatedAt,
+        CreatedBy = account.CreatedBy,
+        UpdatedBy = account.UpdatedBy,
+        IsDeleted = account.IsDeleted,
+    };
 }

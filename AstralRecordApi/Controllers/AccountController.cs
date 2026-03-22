@@ -37,6 +37,17 @@ public class AccountController(IAccountRepository accountRepository) : Controlle
         return Ok(updated);
     }
 
+    /// <summary>user_idに紐づくアカウント一覧取得</summary>
+    /// <param name="userId">ユーザー ID（クエリ: user_id）</param>
+    /// <response code="200">アカウント一覧取得成功</response>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByUserId([FromQuery(Name = "user_id")] Guid userId)
+    {
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
+        return Ok(accounts);
+    }
+
     /// <summary>アカウント情報取得</summary>
     /// <param name="uuid">アカウント UUID</param>
     /// <response code="200">アカウント取得成功</response>
