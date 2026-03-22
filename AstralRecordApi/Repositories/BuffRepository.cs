@@ -12,6 +12,7 @@ public class BuffRepository : IBuffRepository
     private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
 
     private readonly IReadOnlyDictionary<string, BuffResponse> _buffs;
+    private readonly IReadOnlyList<BuffSummaryResponse> _buffSummaries;
 
     public BuffRepository(IOptions<FileDatabaseOptions> options)
     {
@@ -20,7 +21,22 @@ public class BuffRepository : IBuffRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         _buffs = LoadBuffs(rootPath);
+        _buffSummaries = _buffs.Values
+            .Select(buff => new BuffSummaryResponse
+            {
+                Id = buff.Id,
+                Type = buff.Type,
+                Name = buff.Name,
+                Icon = buff.Icon,
+                DurationTicks = buff.DurationTicks,
+                IsDebuff = buff.IsDebuff
+            })
+            .OrderBy(buff => buff.Id, KeyComparer)
+            .ToArray();
     }
+
+    public IReadOnlyList<BuffSummaryResponse> GetAllSummaries()
+        => _buffSummaries;
 
     public BuffResponse? GetById(string buffId)
         => _buffs.TryGetValue(buffId, out var buff) ? buff : null;
