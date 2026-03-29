@@ -34,6 +34,9 @@
 |---|---|
 | `material` | 素材アイテム |
 | `consumable` | 消耗品アイテム |
+| `equipment` | 装備品アイテム |
+| `currency` | 通貨・証 |
+| `bundle` | パッケージ・ボックス |
 
 ## レスポンス
 
@@ -106,6 +109,124 @@ X-Api-Key: <your-api-key>
 }
 ```
 
+### 200 OK — equipment
+
+```http
+GET /api/item/equipment/bronze_sword
+X-Api-Key: <your-api-key>
+```
+
+```json
+{
+	"schemaVersion": 1,
+	"id": "bronze_sword",
+	"category": "equipment",
+	"name": "ブロンズソード",
+	"icon": "IRON_SWORD",
+	"rarity": "COMMON",
+	"saleValue": 50,
+	"customModelData": null,
+	"lore": [
+		"初心者向けの片手剣。"
+	],
+	"unTradeable": false,
+	"unSellable": false,
+	"equipment": {
+		"slot": "WEAPON",
+		"handType": "ONE",
+		"requiredLevel": 3,
+		"requiredClasses": [],
+		"stats": [
+			{
+				"status": "ATTACK_POWER",
+				"type": "FLAT",
+				"value": "12"
+			},
+			{
+				"status": "CRITICAL_CHANCE",
+				"type": "FLAT",
+				"value": "0.03"
+			}
+		],
+		"durability": {
+			"max": 120,
+			"consume": 1
+		},
+		"onUse": {
+			"leftClickCooldownTicks": 80,
+			"leftClickSkillId": "lefthand_slash",
+			"rightClickCooldownTicks": null,
+			"rightClickSkillId": null
+		},
+		"skills": []
+	}
+}
+```
+
+### 200 OK — currency
+
+```http
+GET /api/item/currency/boss_proof_golem
+X-Api-Key: <your-api-key>
+```
+
+```json
+{
+	"schemaVersion": 1,
+	"id": "boss_proof_golem",
+	"category": "currency",
+	"name": "ゴーレム討伐の証",
+	"icon": "AMETHYST_SHARD",
+	"rarity": "EPIC",
+	"saleValue": 0,
+	"customModelData": null,
+	"maxStack": 64,
+	"lore": [
+		"巨像を打ち倒した者に与えられる証。"
+	],
+	"unTradeable": false,
+	"unSellable": true,
+	"currency": {
+		"type": "BOSS_PROOF",
+		"group": "golem",
+		"expiresAt": "2026-02-01T00:00:00+09:00"
+	}
+}
+```
+
+### 200 OK — bundle
+
+```http
+GET /api/item/bundle/magic_iron_ingot_bundle
+X-Api-Key: <your-api-key>
+```
+
+```json
+{
+	"schemaVersion": 1,
+	"id": "magic_iron_ingot_bundle",
+	"category": "bundle",
+	"name": "魔法のパケット",
+	"icon": "chest",
+	"rarity": "UNCOMMON",
+	"saleValue": 0,
+	"customModelData": null,
+	"maxStack": 64,
+	"lore": [
+		"魔力を帯びた珍しいパケット。"
+	],
+	"unTradeable": false,
+	"unSellable": false,
+	"bundle": {
+		"lootTableId": "magic_iron_ingot",
+		"onUse": {
+			"sound": "block.anvil.land",
+			"particle": "block_break"
+		}
+	}
+}
+```
+
 ### 共通フィールド
 
 | フィールド | 型 | 説明 |
@@ -118,6 +239,7 @@ X-Api-Key: <your-api-key>
 | `rarity` | string | レアリティ |
 | `saleValue` | int | 売却価格 |
 | `customModelData` | int \| null | カスタムモデルデータ |
+| `maxStack` | int | 最大スタック数 |
 | `lore` | string[] | 説明文 |
 | `unTradeable` | bool | 取引不可フラグ |
 | `unSellable` | bool | 売却不可フラグ |

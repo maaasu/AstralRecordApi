@@ -1,5 +1,6 @@
 using AstralRecordApi.Models;
 using AstralRecordApi.Options;
+using AstralRecordApi.Utilities;
 using Microsoft.Extensions.Options;
 using System.Text;
 using YamlDotNet.Serialization;
@@ -43,7 +44,9 @@ public class BuffRepository : IBuffRepository
 
     private static IReadOnlyDictionary<string, BuffResponse> LoadBuffs(string rootPath)
     {
-        var buffRootPath = Path.Combine(rootPath, "70.shared.buff");
+        var resolver = FileDatabaseConfigResolver.Load(rootPath);
+        if (!resolver.TryGetDatabaseDirectory("buff", out var buffRootPath))
+            return new Dictionary<string, BuffResponse>(KeyComparer);
         if (!Directory.Exists(buffRootPath))
             throw new DirectoryNotFoundException($"Buff directory was not found: {buffRootPath}");
 

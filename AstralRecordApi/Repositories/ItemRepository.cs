@@ -1,5 +1,6 @@
 using AstralRecordApi.Models;
 using AstralRecordApi.Options;
+using AstralRecordApi.Utilities;
 using Microsoft.Extensions.Options;
 using System.Text;
 using YamlDotNet.Serialization;
@@ -10,7 +11,7 @@ namespace AstralRecordApi.Repositories;
 public class ItemRepository : IItemRepository
 {
     private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
-    private static readonly HashSet<string> SupportedCategories = new(["material", "consumable"], KeyComparer);
+    private static readonly HashSet<string> SupportedCategories = new(["material", "consumable", "equipment", "currency", "bundle"], KeyComparer);
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> _itemsByCategory;
 
@@ -36,7 +37,9 @@ public class ItemRepository : IItemRepository
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> LoadItems(string rootPath)
     {
-        var itemRootPath = Path.Combine(rootPath, "10.features.item");
+        var resolver = FileDatabaseConfigResolver.Load(rootPath);
+        if (!resolver.TryGetDatabaseDirectory("item", out var itemRootPath))
+            return new Dictionary<string, IReadOnlyDictionary<string, ItemResponse>>(KeyComparer);
         if (!Directory.Exists(itemRootPath))
             throw new DirectoryNotFoundException($"Item directory was not found: {itemRootPath}");
 
@@ -57,7 +60,7 @@ public class ItemRepository : IItemRepository
 
             foreach (var filePath in Directory.EnumerateFiles(categoryPath, "*.yml", SearchOption.TopDirectoryOnly))
             {
-                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath);
+                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver);
                 ItemYamlDocument yamlItem;
                 try
                 {
@@ -80,10 +83,10 @@ public class ItemRepository : IItemRepository
         return itemsByCategory;
     }
 
-    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath)
+    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeRefObjects(rawLines);
+        var lines = NormalizeRefObjects(rawLines, resolver);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -100,7 +103,7 @@ public class ItemRepository : IItemRepository
     ///   buffId:          buffId: cure_poison
     ///     ref: buff:cure_poison
     /// </summary>
-    private static string[] NormalizeRefObjects(string[] lines)
+    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
     {
         var result = new List<string>(lines.Length);
         for (int i = 0; i < lines.Length; i++)
@@ -118,9 +121,11 @@ public class ItemRepository : IItemRepository
                     if (nextTrimmed.StartsWith("ref: ", StringComparison.OrdinalIgnoreCase))
                     {
                         var refValue = nextTrimmed["ref: ".Length..].Trim();
-                        // "type:id" 形式から id 部分を抽出（例: buff:cure_poison → cure_poison）
-                        var colonIdx = refValue.LastIndexOf(':');
-                        var id = colonIdx >= 0 ? refValue[(colonIdx + 1)..].Trim() : refValue;
+                        if (!resolver.TryResolveReferenceId(refValue, out var id))
+                        {
+                            result.Add(line);
+                            continue;
+                        }
 
                         var indent = line[..(line.Length - trimmed.Length)];
                         var key = trimmed.TrimEnd(':');
@@ -193,6 +198,8 @@ public class ItemRepository : IItemRepository
 
         public int? CustomModelData { get; init; }
 
+        public int? MaxStack { get; init; }
+
         public List<string>? Lore { get; init; }
 
         public bool? UnTradeable { get; init; }
@@ -200,6 +207,12 @@ public class ItemRepository : IItemRepository
         public bool? UnSellable { get; init; }
 
         public ConsumableYamlDocument? Consumable { get; init; }
+
+        public EquipmentYamlDocument? Equipment { get; init; }
+
+        public CurrencyYamlDocument? Currency { get; init; }
+
+        public BundleYamlDocument? Bundle { get; init; }
 
         public ItemResponse ToResponse(string filePath, string expectedCategory)
         {
@@ -227,10 +240,14 @@ public class ItemRepository : IItemRepository
                 Rarity = Rarity,
                 SaleValue = SaleValue ?? 0,
                 CustomModelData = CustomModelData,
+                MaxStack = MaxStack ?? 64,
                 Lore = Lore ?? [],
                 UnTradeable = UnTradeable ?? false,
                 UnSellable = UnSellable ?? false,
-                Consumable = Consumable?.ToResponse(filePath, expectedCategory)
+                Consumable = Consumable?.ToResponse(filePath, expectedCategory),
+                Equipment = Equipment?.ToResponse(filePath, expectedCategory),
+                Currency = Currency?.ToResponse(),
+                Bundle = Bundle?.ToResponse(filePath, expectedCategory)
             };
         }
     }
@@ -303,6 +320,174 @@ public class ItemRepository : IItemRepository
                 Status = Status,
                 IsPercent = IsPercent ?? false,
                 BuffId = BuffId
+            };
+        }
+    }
+
+    private sealed class EquipmentYamlDocument
+    {
+        public string? Slot { get; init; }
+
+        public string? HandType { get; init; }
+
+        public int? RequiredLevel { get; init; }
+
+        public List<string>? RequiredClasses { get; init; }
+
+        public List<EquipmentStatYamlDocument>? Stats { get; init; }
+
+        public EquipmentDurabilityYamlDocument? Durability { get; init; }
+
+        public EquipmentOnUseYamlDocument? OnUse { get; init; }
+
+        public List<string>? Skills { get; init; }
+
+        public ItemEquipmentResponse ToResponse(string filePath, string expectedCategory)
+        {
+            if (string.IsNullOrWhiteSpace(expectedCategory)
+                || !string.Equals(expectedCategory, "equipment", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"equipment section is only valid for category 'equipment': {filePath}");
+
+            if (string.IsNullOrWhiteSpace(Slot))
+                throw new InvalidOperationException($"equipment.slot is required: {filePath}");
+
+            if (Stats is null || Stats.Count == 0)
+                throw new InvalidOperationException($"equipment.stats is required: {filePath}");
+
+            return new ItemEquipmentResponse
+            {
+                Slot = Slot,
+                HandType = HandType ?? "ONE",
+                RequiredLevel = RequiredLevel ?? 0,
+                RequiredClasses = RequiredClasses ?? [],
+                Stats = Stats.Select(stat => stat.ToResponse(filePath)).ToList().AsReadOnly(),
+                Durability = Durability?.ToResponse(),
+                OnUse = OnUse?.ToResponse(),
+                Skills = Skills ?? []
+            };
+        }
+    }
+
+    private sealed class EquipmentStatYamlDocument
+    {
+        public string? Status { get; init; }
+
+        public string? Type { get; init; }
+
+        public string? Value { get; init; }
+
+        public ItemEquipmentStatResponse ToResponse(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(Status))
+                throw new InvalidOperationException($"equipment.stats[].status is required: {filePath}");
+
+            if (string.IsNullOrWhiteSpace(Type))
+                throw new InvalidOperationException($"equipment.stats[].type is required: {filePath}");
+
+            if (string.IsNullOrWhiteSpace(Value))
+                throw new InvalidOperationException($"equipment.stats[].value is required: {filePath}");
+
+            return new ItemEquipmentStatResponse
+            {
+                Status = Status,
+                Type = Type,
+                Value = Value
+            };
+        }
+    }
+
+    private sealed class EquipmentDurabilityYamlDocument
+    {
+        public int? Max { get; init; }
+
+        public int? Consume { get; init; }
+
+        public ItemEquipmentDurabilityResponse ToResponse()
+        {
+            return new ItemEquipmentDurabilityResponse
+            {
+                Max = Max,
+                Consume = Consume ?? 1
+            };
+        }
+    }
+
+    private sealed class EquipmentOnUseYamlDocument
+    {
+        public int? LeftClickCooldownTicks { get; init; }
+
+        public string? LeftClickSkillId { get; init; }
+
+        public int? RightClickCooldownTicks { get; init; }
+
+        public string? RightClickSkillId { get; init; }
+
+        public ItemEquipmentOnUseResponse ToResponse()
+        {
+            return new ItemEquipmentOnUseResponse
+            {
+                LeftClickCooldownTicks = LeftClickCooldownTicks,
+                LeftClickSkillId = LeftClickSkillId,
+                RightClickCooldownTicks = RightClickCooldownTicks,
+                RightClickSkillId = RightClickSkillId
+            };
+        }
+    }
+
+    private sealed class CurrencyYamlDocument
+    {
+        public string? Type { get; init; }
+
+        public string? Group { get; init; }
+
+        public string? ExpiresAt { get; init; }
+
+        public ItemCurrencyResponse ToResponse()
+        {
+            return new ItemCurrencyResponse
+            {
+                Type = Type,
+                Group = Group,
+                ExpiresAt = ExpiresAt
+            };
+        }
+    }
+
+    private sealed class BundleYamlDocument
+    {
+        public string? LootTableId { get; init; }
+
+        public BundleOnUseYamlDocument? OnUse { get; init; }
+
+        public ItemBundleResponse ToResponse(string filePath, string expectedCategory)
+        {
+            if (string.IsNullOrWhiteSpace(expectedCategory)
+                || !string.Equals(expectedCategory, "bundle", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"bundle section is only valid for category 'bundle': {filePath}");
+
+            if (string.IsNullOrWhiteSpace(LootTableId))
+                throw new InvalidOperationException($"bundle.lootTableId is required: {filePath}");
+
+            return new ItemBundleResponse
+            {
+                LootTableId = LootTableId,
+                OnUse = OnUse?.ToResponse()
+            };
+        }
+    }
+
+    private sealed class BundleOnUseYamlDocument
+    {
+        public string? Sound { get; init; }
+
+        public string? Particle { get; init; }
+
+        public ItemBundleOnUseResponse ToResponse()
+        {
+            return new ItemBundleOnUseResponse
+            {
+                Sound = Sound,
+                Particle = Particle
             };
         }
     }

@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AstralRecordDbContext>(options =>
 
 builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
 builder.Services.AddSingleton<IItemRepository, ItemRepository>();
+builder.Services.AddSingleton<ILootRepository, LootRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
@@ -84,5 +85,6 @@ app.MapControllers().RequireAuthorization();
 
 _ = app.Services.GetRequiredService<IBuffRepository>();
 _ = app.Services.GetRequiredService<IItemRepository>();
+_ = app.Services.GetRequiredService<ILootRepository>();
 
 app.Run();
