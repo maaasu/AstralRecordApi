@@ -35,6 +35,13 @@ public class ItemResponse
     public ItemBundleResponse? Bundle { get; init; }
 }
 
+public class ItemSummaryResponse
+{
+    public required string Id { get; init; }
+
+    public required string Category { get; init; }
+}
+
 public class ItemConsumableResponse
 {
     public ItemConsumableOnUseResponse? OnUse { get; init; }

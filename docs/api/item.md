@@ -9,6 +9,11 @@
 | 項目 | 値 |
 |---|---|
 | メソッド | GET |
+| パス | `/api/item` |
+
+| 項目 | 値 |
+|---|---|
+| メソッド | GET |
 | パス | `/api/item/{category}/{itemId}` |
 
 ## 認証
@@ -20,6 +25,13 @@
 | `X-Api-Key` | string | ✓ | API キー |
 
 ## リクエスト
+
+### 一覧取得
+
+```http
+GET /api/item
+X-Api-Key: <your-api-key>
+```
 
 ### パスパラメータ
 
@@ -39,6 +51,24 @@
 | `bundle` | パッケージ・ボックス |
 
 ## レスポンス
+
+### 200 OK（一覧取得）
+
+最小限の識別情報として `id` と `category` のみ返却します。
+
+```json
+[
+	{
+		"id": "iron_ingot",
+		"category": "material"
+	}
+]
+```
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `id` | string | アイテム ID |
+| `category` | string | アイテムカテゴリ |
 
 ### 200 OK — material
 

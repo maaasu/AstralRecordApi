@@ -14,6 +14,7 @@ public class ItemRepository : IItemRepository
     private static readonly HashSet<string> SupportedCategories = new(["material", "consumable", "equipment", "currency", "bundle"], KeyComparer);
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> _itemsByCategory;
+    private readonly IReadOnlyList<ItemSummaryResponse> _itemSummaries;
 
     public ItemRepository(IOptions<FileDatabaseOptions> options)
     {
@@ -22,7 +23,19 @@ public class ItemRepository : IItemRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         _itemsByCategory = LoadItems(rootPath);
+        _itemSummaries = _itemsByCategory
+            .SelectMany(categoryItems => categoryItems.Value.Values)
+            .OrderBy(item => item.Category, KeyComparer)
+            .ThenBy(item => item.Id, KeyComparer)
+            .Select(item => new ItemSummaryResponse
+            {
+                Id = item.Id,
+                Category = item.Category
+            })
+            .ToArray();
     }
+
+    public IReadOnlyList<ItemSummaryResponse> GetAllSummaries() => _itemSummaries;
 
     public bool IsSupportedCategory(string category)
         => SupportedCategories.Contains(category);

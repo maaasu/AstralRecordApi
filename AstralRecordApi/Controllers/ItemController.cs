@@ -8,6 +8,16 @@ namespace AstralRecordApi.Controllers;
 [Route("api/[controller]")]
 public class ItemController(IItemRepository itemRepository) : ControllerBase
 {
+    /// <summary>アイテム一覧取得（最小項目）</summary>
+    /// <response code="200">アイテム一覧取得成功</response>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetAll()
+    {
+        var items = itemRepository.GetAllSummaries();
+        return Ok(items);
+    }
+
     /// <summary>アイテム取得</summary>
     /// <param name="category">アイテムカテゴリ（material, consumable, equipment, currency, bundle）</param>
     /// <param name="itemId">アイテム ID</param>
