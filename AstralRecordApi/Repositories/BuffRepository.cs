@@ -15,12 +15,13 @@ public class BuffRepository : IBuffRepository
     private readonly IReadOnlyDictionary<string, BuffResponse> _buffs;
     private readonly IReadOnlyList<BuffSummaryResponse> _buffSummaries;
 
-    public BuffRepository(IOptions<FileDatabaseOptions> options)
+    public BuffRepository(IOptions<FileDatabaseOptions> options, ILogger<BuffRepository> logger)
     {
         var rootPath = options.Value.RootPath;
         if (string.IsNullOrWhiteSpace(rootPath))
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
+        logger.LogInformation("バフデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
         _buffs = LoadBuffs(rootPath);
         _buffSummaries = _buffs.Values
             .Select(buff => new BuffSummaryResponse
@@ -34,6 +35,7 @@ public class BuffRepository : IBuffRepository
             })
             .OrderBy(buff => buff.Id, KeyComparer)
             .ToArray();
+        logger.LogInformation("バフデータの読み込みが完了しました (件数: {Count})", _buffSummaries.Count);
     }
 
     public IReadOnlyList<BuffSummaryResponse> GetAllSummaries()

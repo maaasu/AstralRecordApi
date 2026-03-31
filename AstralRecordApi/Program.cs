@@ -63,6 +63,8 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+
 // OpenAPI ドキュメント (/openapi/v1.json)
 app.MapOpenApi();
 
@@ -83,8 +85,10 @@ app.UseAuthorization();
 
 app.MapControllers().RequireAuthorization();
 
+logger.LogInformation("静的データの読み込みを開始します");
 _ = app.Services.GetRequiredService<IBuffRepository>();
 _ = app.Services.GetRequiredService<IItemRepository>();
 _ = app.Services.GetRequiredService<ILootRepository>();
+logger.LogInformation("静的データの読み込みが完了しました");
 
 app.Run();

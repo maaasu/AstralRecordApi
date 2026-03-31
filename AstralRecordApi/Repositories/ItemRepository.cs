@@ -16,12 +16,13 @@ public class ItemRepository : IItemRepository
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> _itemsByCategory;
     private readonly IReadOnlyList<ItemSummaryResponse> _itemSummaries;
 
-    public ItemRepository(IOptions<FileDatabaseOptions> options)
+    public ItemRepository(IOptions<FileDatabaseOptions> options, ILogger<ItemRepository> logger)
     {
         var rootPath = options.Value.RootPath;
         if (string.IsNullOrWhiteSpace(rootPath))
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
+        logger.LogInformation("アイテムデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
         _itemsByCategory = LoadItems(rootPath);
         _itemSummaries = _itemsByCategory
             .SelectMany(categoryItems => categoryItems.Value.Values)
@@ -33,6 +34,7 @@ public class ItemRepository : IItemRepository
                 Category = item.Category
             })
             .ToArray();
+        logger.LogInformation("アイテムデータの読み込みが完了しました (件数: {Count})", _itemSummaries.Count);
     }
 
     public IReadOnlyList<ItemSummaryResponse> GetAllSummaries() => _itemSummaries;

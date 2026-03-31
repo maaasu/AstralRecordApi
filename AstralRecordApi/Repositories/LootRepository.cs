@@ -18,17 +18,19 @@ public class LootRepository : ILootRepository
     private readonly IReadOnlyDictionary<string, LootTableResponse> _tables;
     private readonly IReadOnlyList<LootTableResponse> _tableList;
 
-    public LootRepository(IOptions<FileDatabaseOptions> options)
+    public LootRepository(IOptions<FileDatabaseOptions> options, ILogger<LootRepository> logger)
     {
         var rootPath = options.Value.RootPath;
         if (string.IsNullOrWhiteSpace(rootPath))
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
+        logger.LogInformation("ルートデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
         _pools = LoadPools(rootPath);
         _poolList = _pools.Values.OrderBy(p => p.Id, KeyComparer).ToArray();
 
         _tables = LoadTables(rootPath);
         _tableList = _tables.Values.OrderBy(t => t.Id, KeyComparer).ToArray();
+        logger.LogInformation("ルートデータの読み込みが完了しました (プール: {PoolCount}, テーブル: {TableCount})", _poolList.Count, _tableList.Count);
     }
 
     public IReadOnlyList<LootPoolResponse> GetAllPools() => _poolList;
@@ -146,6 +148,11 @@ public class LootRepository : ILootRepository
     /// 例:
     ///   itemId:          itemId: iron_ingot
     ///     ref: item:iron_ingot
+    ///
+    /// リストアイテム内の参照も正規化する。
+    /// 例:
+    ///   - itemId:        - itemId: iron_ingot
+    ///       ref: item:iron_ingot
     /// </summary>
     private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
     {
@@ -155,32 +162,44 @@ public class LootRepository : ILootRepository
             var line = lines[i];
             var trimmed = line.TrimStart();
 
+            // "key:" 形式（リストアイテム外）
             if (trimmed.EndsWith(':') && !trimmed.StartsWith('-') && !trimmed.StartsWith('#'))
             {
-                if (i + 1 < lines.Length)
-                {
-                    var nextTrimmed = lines[i + 1].TrimStart();
-                    if (nextTrimmed.StartsWith("ref: ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var refValue = nextTrimmed["ref: ".Length..].Trim();
-                        if (!resolver.TryResolveReferenceId(refValue, out var id))
-                        {
-                            result.Add(line);
-                            continue;
-                        }
+                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result))
+                    continue;
+            }
 
-                        var indent = line[..(line.Length - trimmed.Length)];
-                        var key = trimmed.TrimEnd(':');
-                        result.Add($"{indent}{key}: {id}");
-                        i++;
-                        continue;
-                    }
-                }
+            // "- key:" 形式（リストアイテム内）
+            if (trimmed.StartsWith('-') && trimmed.EndsWith(':') && !trimmed.StartsWith('#'))
+            {
+                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result))
+                    continue;
             }
 
             result.Add(line);
         }
         return result.ToArray();
+    }
+
+    private static bool TryNormalizeRef(string[] lines, ref int i, string line, string trimmed,
+        FileDatabaseConfigResolver resolver, List<string> result)
+    {
+        if (i + 1 >= lines.Length)
+            return false;
+
+        var nextTrimmed = lines[i + 1].TrimStart();
+        if (!nextTrimmed.StartsWith("ref: ", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var refValue = nextTrimmed["ref: ".Length..].Trim();
+        if (!resolver.TryResolveReferenceId(refValue, out var id))
+            return false;
+
+        var indent = line[..(line.Length - trimmed.Length)];
+        var key = trimmed.TrimEnd(':');
+        result.Add($"{indent}{key}: {id}");
+        i++;
+        return true;
     }
 
     /// <summary>
