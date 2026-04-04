@@ -22,7 +22,7 @@ public class BuffRepository : IBuffRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         logger.LogInformation("バフデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
-        _buffs = LoadBuffs(rootPath);
+        _buffs = LoadBuffs(rootPath, logger);
         _buffSummaries = _buffs.Values
             .Select(buff => new BuffSummaryResponse
             {
@@ -44,7 +44,7 @@ public class BuffRepository : IBuffRepository
     public BuffResponse? GetById(string buffId)
         => _buffs.TryGetValue(buffId, out var buff) ? buff : null;
 
-    private static IReadOnlyDictionary<string, BuffResponse> LoadBuffs(string rootPath)
+    private static IReadOnlyDictionary<string, BuffResponse> LoadBuffs(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("buff", out var buffRootPath))
@@ -61,21 +61,26 @@ public class BuffRepository : IBuffRepository
 
         foreach (var filePath in Directory.EnumerateFiles(buffRootPath, "*.yml", SearchOption.TopDirectoryOnly))
         {
-            var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath);
-            BuffYamlDocument yamlBuff;
             try
             {
-                yamlBuff = deserializer.Deserialize<BuffYamlDocument>(yaml)
+                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath);
+                var yamlBuff = deserializer.Deserialize<BuffYamlDocument>(yaml)
                     ?? throw new InvalidOperationException($"Failed to deserialize buff YAML (null result): {filePath}");
+                var buff = yamlBuff.ToResponse(filePath);
+                if (!buffs.TryAdd(buff.Id, buff))
+                {
+                    logger.LogWarning("重複するバフ ID '{BuffId}' をスキップします: {FilePath}", buff.Id, filePath);
+                    continue;
+                }
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Failed to deserialize buff YAML: {filePath}", ex);
+                logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
             }
-
-            var buff = yamlBuff.ToResponse(filePath);
-            if (!buffs.TryAdd(buff.Id, buff))
-                throw new InvalidOperationException($"Duplicate buff id '{buff.Id}'.");
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "バフファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+            }
         }
 
         return buffs;

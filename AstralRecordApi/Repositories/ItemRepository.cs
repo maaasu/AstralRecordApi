@@ -23,7 +23,7 @@ public class ItemRepository : IItemRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         logger.LogInformation("アイテムデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
-        _itemsByCategory = LoadItems(rootPath);
+        _itemsByCategory = LoadItems(rootPath, logger);
         _itemSummaries = _itemsByCategory
             .SelectMany(categoryItems => categoryItems.Value.Values)
             .OrderBy(item => item.Category, KeyComparer)
@@ -50,7 +50,7 @@ public class ItemRepository : IItemRepository
         return items.TryGetValue(itemId, out var item) ? item : null;
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> LoadItems(string rootPath)
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> LoadItems(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("item", out var itemRootPath))
@@ -75,21 +75,26 @@ public class ItemRepository : IItemRepository
 
             foreach (var filePath in Directory.EnumerateFiles(categoryPath, "*.yml", SearchOption.TopDirectoryOnly))
             {
-                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver);
-                ItemYamlDocument yamlItem;
                 try
                 {
-                    yamlItem = deserializer.Deserialize<ItemYamlDocument>(yaml)
+                    var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver, logger);
+                    var yamlItem = deserializer.Deserialize<ItemYamlDocument>(yaml)
                         ?? throw new InvalidOperationException($"Failed to deserialize item YAML (null result): {filePath}");
+                    var item = yamlItem.ToResponse(filePath, category);
+                    if (!items.TryAdd(item.Id, item))
+                    {
+                        logger.LogWarning("重複するアイテム ID '{ItemId}' (カテゴリ: {Category}) をスキップします: {FilePath}", item.Id, category, filePath);
+                        continue;
+                    }
                 }
-                catch (Exception ex) when (ex is not InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
-                    throw new InvalidOperationException($"Failed to deserialize item YAML: {filePath}", ex);
+                    logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
                 }
-
-                var item = yamlItem.ToResponse(filePath, category);
-                if (!items.TryAdd(item.Id, item))
-                    throw new InvalidOperationException($"Duplicate item id '{item.Id}' in category '{category}'.");
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "アイテムファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+                }
             }
 
             itemsByCategory[category] = items;
@@ -98,10 +103,10 @@ public class ItemRepository : IItemRepository
         return itemsByCategory;
     }
 
-    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver)
+    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver, ILogger logger)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeRefObjects(rawLines, resolver);
+        var lines = NormalizeRefObjects(rawLines, resolver, filePath, logger);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -118,7 +123,7 @@ public class ItemRepository : IItemRepository
     ///   buffId:          buffId: cure_poison
     ///     ref: buff:cure_poison
     /// </summary>
-    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
+    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver, string filePath, ILogger logger)
     {
         var result = new List<string>(lines.Length);
         for (int i = 0; i < lines.Length; i++)
@@ -138,6 +143,7 @@ public class ItemRepository : IItemRepository
                         var refValue = nextTrimmed["ref: ".Length..].Trim();
                         if (!resolver.TryResolveReferenceId(refValue, out var id))
                         {
+                            logger.LogWarning("ref の解決に失敗しました: ref={RefValue} (ファイル: {FilePath})", refValue, filePath);
                             result.Add(line);
                             continue;
                         }

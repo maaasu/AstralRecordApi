@@ -9,6 +9,11 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+});
+
 // Add services to the container.
 
 builder.Services.Configure<FileDatabaseOptions>(

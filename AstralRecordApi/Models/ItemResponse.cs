@@ -140,11 +140,11 @@ public class ItemEquipmentEnhanceMaterialResponse
 
 public class ItemEquipmentStatResponse
 {
-    public required string Status { get; init; }
+    public string? Status { get; init; }
 
-    public required string Type { get; init; }
+    public string? Type { get; init; }
 
-    public required string Value { get; init; }
+    public string? Value { get; init; }
 }
 
 public class ItemEquipmentDurabilityResponse

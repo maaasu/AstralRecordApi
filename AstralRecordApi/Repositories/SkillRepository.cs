@@ -22,7 +22,7 @@ public class SkillRepository : ISkillRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         logger.LogInformation("スキルデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
-        _skills = LoadSkills(rootPath);
+        _skills = LoadSkills(rootPath, logger);
         _skillSummaries = _skills.Values
             .OrderBy(s => s.Id, KeyComparer)
             .Select(s => new SkillSummaryResponse
@@ -40,7 +40,7 @@ public class SkillRepository : ISkillRepository
     public SkillResponse? GetById(string skillId)
         => _skills.TryGetValue(skillId, out var skill) ? skill : null;
 
-    private static IReadOnlyDictionary<string, SkillResponse> LoadSkills(string rootPath)
+    private static IReadOnlyDictionary<string, SkillResponse> LoadSkills(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("skill", out var skillRootPath))
@@ -57,30 +57,35 @@ public class SkillRepository : ISkillRepository
 
         foreach (var filePath in Directory.EnumerateFiles(skillRootPath, "*.yml", SearchOption.TopDirectoryOnly))
         {
-            var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver);
-            SkillYamlDocument yamlSkill;
             try
             {
-                yamlSkill = deserializer.Deserialize<SkillYamlDocument>(yaml)
+                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver, logger);
+                var yamlSkill = deserializer.Deserialize<SkillYamlDocument>(yaml)
                     ?? throw new InvalidOperationException($"Failed to deserialize skill YAML (null result): {filePath}");
+                var skill = yamlSkill.ToResponse(filePath);
+                if (!skills.TryAdd(skill.Id, skill))
+                {
+                    logger.LogWarning("重複するスキル ID '{SkillId}' をスキップします: {FilePath}", skill.Id, filePath);
+                    continue;
+                }
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Failed to deserialize skill YAML: {filePath}", ex);
+                logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
             }
-
-            var skill = yamlSkill.ToResponse(filePath);
-            if (!skills.TryAdd(skill.Id, skill))
-                throw new InvalidOperationException($"Duplicate skill id '{skill.Id}'.");
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "スキルファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+            }
         }
 
         return skills;
     }
 
-    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver)
+    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver, ILogger logger)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeRefObjects(rawLines, resolver);
+        var lines = NormalizeRefObjects(rawLines, resolver, filePath, logger);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -91,7 +96,7 @@ public class SkillRepository : ISkillRepository
         return builder.ToString();
     }
 
-    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
+    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver, string filePath, ILogger logger)
     {
         var result = new List<string>(lines.Length);
         for (int i = 0; i < lines.Length; i++)
@@ -109,6 +114,7 @@ public class SkillRepository : ISkillRepository
                         var refValue = nextTrimmed["ref: ".Length..].Trim();
                         if (!resolver.TryResolveReferenceId(refValue, out var id))
                         {
+                            logger.LogWarning("ref の解決に失敗しました: ref={RefValue} (ファイル: {FilePath})", refValue, filePath);
                             result.Add(line);
                             continue;
                         }

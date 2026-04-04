@@ -22,7 +22,7 @@ public class ClassRepository : IClassRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         logger.LogInformation("クラスデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
-        _classes = LoadClasses(rootPath);
+        _classes = LoadClasses(rootPath, logger);
         _classSummaries = _classes.Values
             .OrderBy(c => c.Id, KeyComparer)
             .Select(c => new ClassSummaryResponse
@@ -40,7 +40,7 @@ public class ClassRepository : IClassRepository
     public ClassResponse? GetById(string classId)
         => _classes.TryGetValue(classId, out var cls) ? cls : null;
 
-    private static IReadOnlyDictionary<string, ClassResponse> LoadClasses(string rootPath)
+    private static IReadOnlyDictionary<string, ClassResponse> LoadClasses(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("class", out var classRootPath))
@@ -57,30 +57,35 @@ public class ClassRepository : IClassRepository
 
         foreach (var filePath in Directory.EnumerateFiles(classRootPath, "*.yml", SearchOption.TopDirectoryOnly))
         {
-            var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver);
-            ClassYamlDocument yamlClass;
             try
             {
-                yamlClass = deserializer.Deserialize<ClassYamlDocument>(yaml)
+                var yaml = ReadYamlWithNormalizedAmpersandScalars(filePath, resolver, logger);
+                var yamlClass = deserializer.Deserialize<ClassYamlDocument>(yaml)
                     ?? throw new InvalidOperationException($"Failed to deserialize class YAML (null result): {filePath}");
+                var cls = yamlClass.ToResponse(filePath);
+                if (!classes.TryAdd(cls.Id, cls))
+                {
+                    logger.LogWarning("重複するクラス ID '{ClassId}' をスキップします: {FilePath}", cls.Id, filePath);
+                    continue;
+                }
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Failed to deserialize class YAML: {filePath}", ex);
+                logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
             }
-
-            var cls = yamlClass.ToResponse(filePath);
-            if (!classes.TryAdd(cls.Id, cls))
-                throw new InvalidOperationException($"Duplicate class id '{cls.Id}'.");
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "クラスファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+            }
         }
 
         return classes;
     }
 
-    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver)
+    private static string ReadYamlWithNormalizedAmpersandScalars(string filePath, FileDatabaseConfigResolver resolver, ILogger logger)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeRefObjects(rawLines, resolver);
+        var lines = NormalizeRefObjects(rawLines, resolver, filePath, logger);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -91,7 +96,7 @@ public class ClassRepository : IClassRepository
         return builder.ToString();
     }
 
-    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
+    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver, string filePath, ILogger logger)
     {
         var result = new List<string>(lines.Length);
         for (int i = 0; i < lines.Length; i++)
@@ -109,6 +114,7 @@ public class ClassRepository : IClassRepository
                         var refValue = nextTrimmed["ref: ".Length..].Trim();
                         if (!resolver.TryResolveReferenceId(refValue, out var id))
                         {
+                            logger.LogWarning("ref の解決に失敗しました: ref={RefValue} (ファイル: {FilePath})", refValue, filePath);
                             result.Add(line);
                             continue;
                         }

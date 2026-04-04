@@ -25,10 +25,10 @@ public class LootRepository : ILootRepository
             throw new InvalidOperationException("FileDatabase:RootPath is not configured.");
 
         logger.LogInformation("ルートデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
-        _pools = LoadPools(rootPath);
+        _pools = LoadPools(rootPath, logger);
         _poolList = _pools.Values.OrderBy(p => p.Id, KeyComparer).ToArray();
 
-        _tables = LoadTables(rootPath);
+        _tables = LoadTables(rootPath, logger);
         _tableList = _tables.Values.OrderBy(t => t.Id, KeyComparer).ToArray();
         logger.LogInformation("ルートデータの読み込みが完了しました (プール: {PoolCount}, テーブル: {TableCount})", _poolList.Count, _tableList.Count);
     }
@@ -43,7 +43,7 @@ public class LootRepository : ILootRepository
     public LootTableResponse? GetTableById(string tableId)
         => _tables.TryGetValue(tableId, out var table) ? table : null;
 
-    private static IReadOnlyDictionary<string, LootPoolResponse> LoadPools(string rootPath)
+    private static IReadOnlyDictionary<string, LootPoolResponse> LoadPools(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("loot", out var lootRootPath))
@@ -62,27 +62,32 @@ public class LootRepository : ILootRepository
 
         foreach (var filePath in Directory.EnumerateFiles(poolPath, "*.yml", SearchOption.TopDirectoryOnly))
         {
-            var yaml = ReadPoolYaml(filePath, resolver);
-            LootPoolYamlDocument yamlPool;
             try
             {
-                yamlPool = deserializer.Deserialize<LootPoolYamlDocument>(yaml)
+                var yaml = ReadPoolYaml(filePath, resolver, logger);
+                var yamlPool = deserializer.Deserialize<LootPoolYamlDocument>(yaml)
                     ?? throw new InvalidOperationException($"Failed to deserialize loot pool YAML (null result): {filePath}");
+                var pool = yamlPool.ToResponse(filePath);
+                if (!pools.TryAdd(pool.Id, pool))
+                {
+                    logger.LogWarning("重複するルートプール ID '{PoolId}' をスキップします: {FilePath}", pool.Id, filePath);
+                    continue;
+                }
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Failed to deserialize loot pool YAML: {filePath}", ex);
+                logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
             }
-
-            var pool = yamlPool.ToResponse(filePath);
-            if (!pools.TryAdd(pool.Id, pool))
-                throw new InvalidOperationException($"Duplicate loot pool id '{pool.Id}'.");
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "ルートプールファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+            }
         }
 
         return pools;
     }
 
-    private static IReadOnlyDictionary<string, LootTableResponse> LoadTables(string rootPath)
+    private static IReadOnlyDictionary<string, LootTableResponse> LoadTables(string rootPath, ILogger logger)
     {
         var resolver = FileDatabaseConfigResolver.Load(rootPath);
         if (!resolver.TryGetDatabaseDirectory("loot", out var lootRootPath))
@@ -101,30 +106,35 @@ public class LootRepository : ILootRepository
 
         foreach (var filePath in Directory.EnumerateFiles(tablePath, "*.yml", SearchOption.TopDirectoryOnly))
         {
-            var yaml = ReadTableYaml(filePath, resolver);
-            LootTableYamlDocument yamlTable;
             try
             {
-                yamlTable = deserializer.Deserialize<LootTableYamlDocument>(yaml)
+                var yaml = ReadTableYaml(filePath, resolver, logger);
+                var yamlTable = deserializer.Deserialize<LootTableYamlDocument>(yaml)
                     ?? throw new InvalidOperationException($"Failed to deserialize loot table YAML (null result): {filePath}");
+                var table = yamlTable.ToResponse(filePath);
+                if (!tables.TryAdd(table.Id, table))
+                {
+                    logger.LogWarning("重複するルートテーブル ID '{TableId}' をスキップします: {FilePath}", table.Id, filePath);
+                    continue;
+                }
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Failed to deserialize loot table YAML: {filePath}", ex);
+                logger.LogWarning("必須項目が不足しているためスキップします: {Message}", ex.Message);
             }
-
-            var table = yamlTable.ToResponse(filePath);
-            if (!tables.TryAdd(table.Id, table))
-                throw new InvalidOperationException($"Duplicate loot table id '{table.Id}'.");
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "ルートテーブルファイルの読み込みに失敗しました。スキップします: {FilePath}", filePath);
+            }
         }
 
         return tables;
     }
 
-    private static string ReadPoolYaml(string filePath, FileDatabaseConfigResolver resolver)
+    private static string ReadPoolYaml(string filePath, FileDatabaseConfigResolver resolver, ILogger logger)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeRefObjects(rawLines, resolver);
+        var lines = NormalizeRefObjects(rawLines, resolver, filePath, logger);
         lines = YamlRangeNormalizer.NormalizeMinMaxObjects(lines);
         var builder = new StringBuilder();
         foreach (var line in lines)
@@ -132,10 +142,10 @@ public class LootRepository : ILootRepository
         return builder.ToString();
     }
 
-    private static string ReadTableYaml(string filePath, FileDatabaseConfigResolver resolver)
+    private static string ReadTableYaml(string filePath, FileDatabaseConfigResolver resolver, ILogger logger)
     {
         var rawLines = File.ReadAllLines(filePath);
-        var lines = NormalizeListRefs(rawLines, resolver);
+        var lines = NormalizeListRefs(rawLines, resolver, filePath, logger);
         lines = YamlRangeNormalizer.NormalizeMinMaxObjects(lines);
         var builder = new StringBuilder();
         foreach (var line in lines)
@@ -154,7 +164,7 @@ public class LootRepository : ILootRepository
     ///   - itemId:        - itemId: iron_ingot
     ///       ref: item:iron_ingot
     /// </summary>
-    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver)
+    private static string[] NormalizeRefObjects(string[] lines, FileDatabaseConfigResolver resolver, string filePath, ILogger logger)
     {
         var result = new List<string>(lines.Length);
         for (int i = 0; i < lines.Length; i++)
@@ -165,14 +175,14 @@ public class LootRepository : ILootRepository
             // "key:" 形式（リストアイテム外）
             if (trimmed.EndsWith(':') && !trimmed.StartsWith('-') && !trimmed.StartsWith('#'))
             {
-                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result))
+                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result, filePath, logger))
                     continue;
             }
 
             // "- key:" 形式（リストアイテム内）
             if (trimmed.StartsWith('-') && trimmed.EndsWith(':') && !trimmed.StartsWith('#'))
             {
-                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result))
+                if (TryNormalizeRef(lines, ref i, line, trimmed, resolver, result, filePath, logger))
                     continue;
             }
 
@@ -182,7 +192,7 @@ public class LootRepository : ILootRepository
     }
 
     private static bool TryNormalizeRef(string[] lines, ref int i, string line, string trimmed,
-        FileDatabaseConfigResolver resolver, List<string> result)
+        FileDatabaseConfigResolver resolver, List<string> result, string filePath, ILogger logger)
     {
         if (i + 1 >= lines.Length)
             return false;
@@ -193,7 +203,10 @@ public class LootRepository : ILootRepository
 
         var refValue = nextTrimmed["ref: ".Length..].Trim();
         if (!resolver.TryResolveReferenceId(refValue, out var id))
+        {
+            logger.LogWarning("ref の解決に失敗しました: ref={RefValue} (ファイル: {FilePath})", refValue, filePath);
             return false;
+        }
 
         var indent = line[..(line.Length - trimmed.Length)];
         var key = trimmed.TrimEnd(':');
@@ -208,7 +221,7 @@ public class LootRepository : ILootRepository
     ///   - ref: pool_id   →   - pool_id
     ///   - ref: loot_table:pool_id   →   - pool_id
     /// </summary>
-    private static string[] NormalizeListRefs(string[] lines, FileDatabaseConfigResolver resolver)
+    private static string[] NormalizeListRefs(string[] lines, FileDatabaseConfigResolver resolver, string filePath, ILogger logger)
     {
         var result = new List<string>(lines.Length);
         foreach (var line in lines)
@@ -219,6 +232,7 @@ public class LootRepository : ILootRepository
                 var refValue = trimmed["- ref: ".Length..].Trim();
                 if (!resolver.TryResolveReferenceId(refValue, out var id))
                 {
+                    logger.LogWarning("ref の解決に失敗しました: ref={RefValue} (ファイル: {FilePath})", refValue, filePath);
                     result.Add(line);
                     continue;
                 }
