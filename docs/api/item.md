@@ -49,6 +49,7 @@ X-Api-Key: <your-api-key>
 | `equipment` | 装備品アイテム |
 | `currency` | 通貨・証 |
 | `bundle` | パッケージ・ボックス |
+| `rune` | ルーンアイテム |
 
 ## レスポンス
 
@@ -171,12 +172,14 @@ X-Api-Key: <your-api-key>
 			{
 				"status": "ATTACK_POWER",
 				"type": "FLAT",
-				"value": "12"
+				"value": "12",
+				"random": null
 			},
 			{
 				"status": "CRITICAL_CHANCE",
 				"type": "FLAT",
-				"value": "0.03"
+				"value": "0.03",
+				"random": null
 			}
 		],
 		"durability": {
@@ -215,7 +218,10 @@ X-Api-Key: <your-api-key>
 					"failAction": "NONE"
 				}
 			]
-		}
+		},
+		"enchant": null,
+		"rune": null,
+		"transcendence": []
 	}
 }
 ```
@@ -285,6 +291,45 @@ X-Api-Key: <your-api-key>
 }
 ```
 
+### 200 OK — rune
+
+```http
+GET /api/item/rune/rune_attack_small
+X-Api-Key: <your-api-key>
+```
+
+```json
+{
+	"schemaVersion": 1,
+	"id": "rune_attack_small",
+	"category": "rune",
+	"name": "攻撃のルーン【小】",
+	"icon": "BRICK",
+	"rarity": "COMMON",
+	"saleValue": 0,
+	"customModelData": null,
+	"maxStack": 1,
+	"lore": [
+		"装備に嵌め込むことで攻撃力を高める。"
+	],
+	"unTradeable": false,
+	"unSellable": false,
+	"rune": {
+		"targetSlots": ["WEAPON"],
+		"requiredEnhanceLevel": 0,
+		"stats": [
+			{
+				"status": "ATTACK",
+				"type": "FLAT",
+				"value": "5",
+				"random": null
+			}
+		],
+		"skills": []
+	}
+}
+```
+
 ### 共通フィールド
 
 | フィールド | 型 | 説明 |
@@ -311,9 +356,10 @@ X-Api-Key: <your-api-key>
 | `equipment.tag` | string \| null | ツール種別・アクセサリ種別などの補助情報 |
 | `equipment.requiredLevel` | int | 装備に必要なプレイヤーレベル（0 で制限なし） |
 | `equipment.requiredClasses` | string[] | 装備可能クラス ID リスト（空の場合は全クラス可） |
-| `equipment.stats[].status` | string | ステータス名（StatusType） |
-| `equipment.stats[].type` | string | 補正方式（FLAT / SCALAR） |
-| `equipment.stats[].value` | string | 補正値（固定値または範囲 例: "1~4"） |
+| `equipment.stats[].status` | string \| null | ステータス名（StatusType） |
+| `equipment.stats[].type` | string \| null | 補正方式（FLAT / SCALAR） |
+| `equipment.stats[].value` | string \| null | 補正値（固定値または範囲 例: "1~4"） |
+| `equipment.stats[].random` | string \| null | 装備作成時のランダム変動幅（例: "-10~10"） |
 | `equipment.durability.max` | int \| null | 最大耐久値 |
 | `equipment.durability.consume` | int | 1 回の使用で減る耐久値 |
 | `equipment.onUse.leftClickCooldownTicks` | int \| null | 左クリック使用時クールタイム |
@@ -333,6 +379,39 @@ X-Api-Key: <your-api-key>
 | `equipment.enhance.levels[].requiredCurrency` | int \| null | 必要通貨量 |
 | `equipment.enhance.levels[].successRate` | float | 強化成功率（0.0 〜 1.0） |
 | `equipment.enhance.levels[].failAction` | string | 失敗時挙動（NONE / DOWNGRADE / DESTROY） |
+| `equipment.enchant.maxSlots` | int | エンチャント最大スロット数 |
+| `equipment.enchant.pools[].recipeId` | string \| null | エンチャントプール使用レシピ ID |
+| `equipment.enchant.pools[].requiredMaterial.itemId` | string | プール発動に必要な素材アイテム ID |
+| `equipment.enchant.pools[].requiredMaterial.amount` | int | 必要な素材個数 |
+| `equipment.enchant.pools[].requiredCurrency` | int | エンチャント実行に必要な通貨量 |
+| `equipment.enchant.pools[].entries[].status` | string \| null | 付与されるステータス名 |
+| `equipment.enchant.pools[].entries[].type` | string \| null | 補正方式（FLAT / SCALAR） |
+| `equipment.enchant.pools[].entries[].value` | string \| null | 付与値（固定値または範囲） |
+| `equipment.enchant.pools[].entries[].weight` | int | 抽選重み（値が大きいほど選ばれやすい） |
+| `equipment.rune.maxSlots` | string | 最大ルーンスロット数（固定値または範囲 例: "2", "1~3"） |
+| `equipment.rune.allowedRuneIds` | string[] | 装着を許可するルーン ID リスト（空の場合は全ルーン許可） |
+| `equipment.transcendence[].name` | string \| null | 状態変化の名称（例: "進化"） |
+| `equipment.transcendence[].rank` | int | 状態変化の強さ指標 |
+| `equipment.transcendence[].recipeId` | string \| null | 状態変化レシピ ID |
+| `equipment.transcendence[].requiredMaterials[].itemId` | string | 必要素材アイテム ID |
+| `equipment.transcendence[].requiredMaterials[].amount` | int | 必要数 |
+| `equipment.transcendence[].requiredCurrency` | int | 必要通貨量 |
+| `equipment.transcendence[].overrides.name` | string \| null | 状態変化後のアイテム名称 |
+| `equipment.transcendence[].overrides.enhance.maxLevel` | int | 状態変化後の強化最大レベル |
+| `equipment.transcendence[].overrides.enchant.maxSlots` | int | 状態変化後のエンチャント最大スロット数 |
+| `equipment.transcendence[].overrides.rune.maxSlots` | string | 状態変化後のルーン最大スロット数 |
+
+### rune フィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `rune.targetSlots` | string[] | 装着可能な装備スロット種別（WEAPON / HEAD / CHEST など。ANY で全スロット対応） |
+| `rune.requiredEnhanceLevel` | int | 装備側に必要な最低強化レベル（0 で制限なし） |
+| `rune.stats[].status` | string \| null | 付与されるステータス名（StatusType） |
+| `rune.stats[].type` | string \| null | 補正方式（FLAT / SCALAR） |
+| `rune.stats[].value` | string \| null | 補正値（固定値または範囲 例: "3~8"） |
+| `rune.stats[].random` | string \| null | 装備作成時のランダム変動幅 |
+| `rune.skills` | string[] | ルーン装着中に付与されるスキル ID リスト |
 
 ### bundle フィールド
 

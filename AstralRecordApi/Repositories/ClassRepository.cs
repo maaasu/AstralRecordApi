@@ -208,6 +208,16 @@ public class ClassRepository : IClassRepository
         {
             if (SchemaVersion is null)
                 throw new InvalidOperationException($"schemaVersion is required: {filePath}");
+
+            return SchemaVersion.Value switch
+            {
+                1 => ToResponseV1(filePath),
+                _ => throw new InvalidOperationException($"Unsupported schemaVersion '{SchemaVersion.Value}': {filePath}")
+            };
+        }
+
+        private ClassResponse ToResponseV1(string filePath)
+        {
             if (string.IsNullOrWhiteSpace(Id))
                 throw new InvalidOperationException($"id is required: {filePath}");
             if (string.IsNullOrWhiteSpace(Type))
@@ -221,7 +231,7 @@ public class ClassRepository : IClassRepository
 
             return new ClassResponse
             {
-                SchemaVersion = SchemaVersion.Value,
+                SchemaVersion = SchemaVersion!.Value,
                 Id = Id,
                 Type = Type,
                 Name = Name,

@@ -33,6 +33,8 @@ public class ItemResponse
     public ItemCurrencyResponse? Currency { get; init; }
 
     public ItemBundleResponse? Bundle { get; init; }
+
+    public ItemRuneResponse? Rune { get; init; }
 }
 
 public class ItemSummaryResponse
@@ -85,7 +87,7 @@ public class ItemEquipmentResponse
 
     public IReadOnlyList<string> RequiredClasses { get; init; } = [];
 
-    public required IReadOnlyList<ItemEquipmentStatResponse> Stats { get; init; }
+    public IReadOnlyList<ItemEquipmentStatResponse> Stats { get; init; } = [];
 
     public ItemEquipmentDurabilityResponse? Durability { get; init; }
 
@@ -94,6 +96,12 @@ public class ItemEquipmentResponse
     public IReadOnlyList<string> Skills { get; init; } = [];
 
     public ItemEquipmentEnhanceResponse? Enhance { get; init; }
+
+    public ItemEquipmentEnchantResponse? Enchant { get; init; }
+
+    public ItemEquipmentRuneResponse? Rune { get; init; }
+
+    public IReadOnlyList<ItemEquipmentTranscendenceResponse> Transcendence { get; init; } = [];
 }
 
 public class ItemEquipmentEnhanceResponse
@@ -145,6 +153,8 @@ public class ItemEquipmentStatResponse
     public string? Type { get; init; }
 
     public string? Value { get; init; }
+
+    public string? Random { get; init; }
 }
 
 public class ItemEquipmentDurabilityResponse
@@ -152,6 +162,112 @@ public class ItemEquipmentDurabilityResponse
     public int? Max { get; init; }
 
     public int Consume { get; init; } = 1;
+}
+
+public class ItemEquipmentEnchantResponse
+{
+    public int MaxSlots { get; init; } = 1;
+
+    public IReadOnlyList<ItemEquipmentEnchantPoolResponse> Pools { get; init; } = [];
+}
+
+public class ItemEquipmentEnchantPoolResponse
+{
+    public string? RecipeId { get; init; }
+
+    public ItemEquipmentEnchantPoolMaterialResponse? RequiredMaterial { get; init; }
+
+    public int RequiredCurrency { get; init; }
+
+    public IReadOnlyList<ItemEquipmentEnchantEntryResponse> Entries { get; init; } = [];
+}
+
+public class ItemEquipmentEnchantPoolMaterialResponse
+{
+    public required string ItemId { get; init; }
+
+    public int Amount { get; init; } = 1;
+}
+
+public class ItemEquipmentEnchantEntryResponse
+{
+    public string? Status { get; init; }
+
+    public string? Type { get; init; }
+
+    public string? Value { get; init; }
+
+    public int Weight { get; init; } = 1;
+}
+
+public class ItemEquipmentRuneResponse
+{
+    public string MaxSlots { get; init; } = "0";
+
+    public IReadOnlyList<string> AllowedRuneIds { get; init; } = [];
+}
+
+public class ItemEquipmentTranscendenceResponse
+{
+    public string? Name { get; init; }
+
+    public int Rank { get; init; }
+
+    public string? RecipeId { get; init; }
+
+    public IReadOnlyList<ItemEquipmentEnhanceMaterialResponse> RequiredMaterials { get; init; } = [];
+
+    public int RequiredCurrency { get; init; }
+
+    public ItemEquipmentTranscendenceOverridesResponse? Overrides { get; init; }
+}
+
+public class ItemEquipmentTranscendenceOverridesResponse
+{
+    public string? Name { get; init; }
+
+    public ItemEquipmentTranscendenceOverridesEnhanceResponse? Enhance { get; init; }
+
+    public ItemEquipmentTranscendenceOverridesEnchantResponse? Enchant { get; init; }
+
+    public ItemEquipmentTranscendenceOverridesRuneResponse? Rune { get; init; }
+}
+
+public class ItemEquipmentTranscendenceOverridesEnhanceResponse
+{
+    public int MaxLevel { get; init; }
+}
+
+public class ItemEquipmentTranscendenceOverridesEnchantResponse
+{
+    public int MaxSlots { get; init; }
+}
+
+public class ItemEquipmentTranscendenceOverridesRuneResponse
+{
+    public string MaxSlots { get; init; } = "0";
+}
+
+public class ItemRuneResponse
+{
+    public IReadOnlyList<string> TargetSlots { get; init; } = [];
+
+    public int RequiredEnhanceLevel { get; init; }
+
+    public IReadOnlyList<ItemRuneStatResponse> Stats { get; init; } = [];
+
+    public IReadOnlyList<string> Skills { get; init; } = [];
+}
+
+public class ItemRuneStatResponse
+{
+    public string? Status { get; init; }
+
+    public string? Type { get; init; }
+
+    public string? Value { get; init; }
+
+    public string? Random { get; init; }
 }
 
 public class ItemEquipmentOnUseResponse

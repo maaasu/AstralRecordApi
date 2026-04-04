@@ -19,7 +19,7 @@ public class ItemController(IItemRepository itemRepository) : ControllerBase
     }
 
     /// <summary>アイテム取得</summary>
-    /// <param name="category">アイテムカテゴリ（material, consumable, equipment, currency, bundle）</param>
+    /// <param name="category">アイテムカテゴリ（material, consumable, equipment, currency, bundle, rune）</param>
     /// <param name="itemId">アイテム ID</param>
     /// <response code="200">アイテム取得成功</response>
     /// <response code="400">未対応カテゴリを指定</response>

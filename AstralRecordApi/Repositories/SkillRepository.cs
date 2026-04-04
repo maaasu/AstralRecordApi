@@ -208,6 +208,16 @@ public class SkillRepository : ISkillRepository
         {
             if (SchemaVersion is null)
                 throw new InvalidOperationException($"schemaVersion is required: {filePath}");
+
+            return SchemaVersion.Value switch
+            {
+                1 => ToResponseV1(filePath),
+                _ => throw new InvalidOperationException($"Unsupported schemaVersion '{SchemaVersion.Value}': {filePath}")
+            };
+        }
+
+        private SkillResponse ToResponseV1(string filePath)
+        {
             if (string.IsNullOrWhiteSpace(Id))
                 throw new InvalidOperationException($"id is required: {filePath}");
             if (string.IsNullOrWhiteSpace(Type))
@@ -219,7 +229,7 @@ public class SkillRepository : ISkillRepository
 
             return new SkillResponse
             {
-                SchemaVersion = SchemaVersion.Value,
+                SchemaVersion = SchemaVersion!.Value,
                 Id = Id,
                 Type = Type,
                 ImplementationId = ImplementationId,

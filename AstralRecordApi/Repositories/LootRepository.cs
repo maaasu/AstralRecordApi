@@ -302,6 +302,16 @@ public class LootRepository : ILootRepository
         {
             if (SchemaVersion is null)
                 throw new InvalidOperationException($"schemaVersion is required: {filePath}");
+
+            return SchemaVersion.Value switch
+            {
+                1 => ToResponseV1(filePath),
+                _ => throw new InvalidOperationException($"Unsupported schemaVersion '{SchemaVersion.Value}': {filePath}")
+            };
+        }
+
+        private LootPoolResponse ToResponseV1(string filePath)
+        {
             if (string.IsNullOrWhiteSpace(Id))
                 throw new InvalidOperationException($"id is required: {filePath}");
             if (string.IsNullOrWhiteSpace(Type))
@@ -311,7 +321,7 @@ public class LootRepository : ILootRepository
 
             return new LootPoolResponse
             {
-                SchemaVersion = SchemaVersion.Value,
+                SchemaVersion = SchemaVersion!.Value,
                 Id = Id,
                 Type = Type,
                 Pick = Pick,
@@ -360,6 +370,16 @@ public class LootRepository : ILootRepository
         {
             if (SchemaVersion is null)
                 throw new InvalidOperationException($"schemaVersion is required: {filePath}");
+
+            return SchemaVersion.Value switch
+            {
+                1 => ToResponseV1(filePath),
+                _ => throw new InvalidOperationException($"Unsupported schemaVersion '{SchemaVersion.Value}': {filePath}")
+            };
+        }
+
+        private LootTableResponse ToResponseV1(string filePath)
+        {
             if (string.IsNullOrWhiteSpace(Id))
                 throw new InvalidOperationException($"id is required: {filePath}");
             if (string.IsNullOrWhiteSpace(Type))
@@ -369,7 +389,7 @@ public class LootRepository : ILootRepository
 
             return new LootTableResponse
             {
-                SchemaVersion = SchemaVersion.Value,
+                SchemaVersion = SchemaVersion!.Value,
                 Id = Id,
                 Type = Type,
                 Rolls = Rolls,

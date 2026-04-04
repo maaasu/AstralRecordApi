@@ -11,7 +11,7 @@ namespace AstralRecordApi.Repositories;
 public class ItemRepository : IItemRepository
 {
     private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
-    private static readonly HashSet<string> SupportedCategories = new(["material", "consumable", "equipment", "currency", "bundle"], KeyComparer);
+    private static readonly HashSet<string> SupportedCategories = new(["material", "consumable", "equipment", "currency", "bundle", "rune"], KeyComparer);
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> _itemsByCategory;
     private readonly IReadOnlyList<ItemSummaryResponse> _itemSummaries;
@@ -64,6 +64,7 @@ public class ItemRepository : IItemRepository
             .Build();
 
         var itemsByCategory = new Dictionary<string, IReadOnlyDictionary<string, ItemResponse>>(KeyComparer);
+        var globalIds = new HashSet<string>(KeyComparer);
 
         foreach (var category in SupportedCategories)
         {
@@ -81,11 +82,12 @@ public class ItemRepository : IItemRepository
                     var yamlItem = deserializer.Deserialize<ItemYamlDocument>(yaml)
                         ?? throw new InvalidOperationException($"Failed to deserialize item YAML (null result): {filePath}");
                     var item = yamlItem.ToResponse(filePath, category);
-                    if (!items.TryAdd(item.Id, item))
+                    if (!globalIds.Add(item.Id))
                     {
-                        logger.LogWarning("重複するアイテム ID '{ItemId}' (カテゴリ: {Category}) をスキップします: {FilePath}", item.Id, category, filePath);
+                        logger.LogWarning("重複するアイテム ID '{ItemId}' (カテゴリ: {Category}) をスキップします。ID はカテゴリを問わず一意である必要があります: {FilePath}", item.Id, category, filePath);
                         continue;
                     }
+                    items[item.Id] = item;
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -107,6 +109,8 @@ public class ItemRepository : IItemRepository
     {
         var rawLines = File.ReadAllLines(filePath);
         var lines = NormalizeRefObjects(rawLines, resolver, filePath, logger);
+        lines = YamlRangeNormalizer.NormalizeMinMaxObjects(lines);
+        lines = YamlRangeNormalizer.NormalizeRandomRangeObjects(lines);
         var builder = new StringBuilder();
 
         foreach (var line in lines)
@@ -235,10 +239,22 @@ public class ItemRepository : IItemRepository
 
         public BundleYamlDocument? Bundle { get; init; }
 
+        public RuneItemYamlDocument? Rune { get; init; }
+
         public ItemResponse ToResponse(string filePath, string expectedCategory)
         {
             if (SchemaVersion is null)
                 throw new InvalidOperationException($"schemaVersion is required: {filePath}");
+
+            return SchemaVersion.Value switch
+            {
+                1 => ToResponseV1(filePath, expectedCategory),
+                _ => throw new InvalidOperationException($"Unsupported schemaVersion '{SchemaVersion.Value}': {filePath}")
+            };
+        }
+
+        private ItemResponse ToResponseV1(string filePath, string expectedCategory)
+        {
             if (string.IsNullOrWhiteSpace(Id))
                 throw new InvalidOperationException($"id is required: {filePath}");
             if (!string.IsNullOrWhiteSpace(Category)
@@ -253,7 +269,7 @@ public class ItemRepository : IItemRepository
 
             return new ItemResponse
             {
-                SchemaVersion = SchemaVersion.Value,
+                SchemaVersion = SchemaVersion!.Value,
                 Id = Id,
                 Category = Category ?? expectedCategory,
                 Name = Name,
@@ -268,7 +284,8 @@ public class ItemRepository : IItemRepository
                 Consumable = Consumable?.ToResponse(filePath, expectedCategory),
                 Equipment = Equipment?.ToResponse(filePath, expectedCategory),
                 Currency = Currency?.ToResponse(),
-                Bundle = Bundle?.ToResponse(filePath, expectedCategory)
+                Bundle = Bundle?.ToResponse(filePath, expectedCategory),
+                Rune = Rune?.ToResponse(filePath, expectedCategory)
             };
         }
     }
@@ -367,6 +384,12 @@ public class ItemRepository : IItemRepository
 
         public EquipmentEnhanceYamlDocument? Enhance { get; init; }
 
+        public EquipmentEnchantYamlDocument? Enchant { get; init; }
+
+        public EquipmentRuneYamlDocument? Rune { get; init; }
+
+        public List<EquipmentTranscendenceYamlDocument>? Transcendence { get; init; }
+
         public ItemEquipmentResponse ToResponse(string filePath, string expectedCategory)
         {
             if (string.IsNullOrWhiteSpace(expectedCategory)
@@ -376,9 +399,6 @@ public class ItemRepository : IItemRepository
             if (string.IsNullOrWhiteSpace(Slot))
                 throw new InvalidOperationException($"equipment.slot is required: {filePath}");
 
-            if (Stats is null || Stats.Count == 0)
-                throw new InvalidOperationException($"equipment.stats is required: {filePath}");
-
             return new ItemEquipmentResponse
             {
                 Slot = Slot,
@@ -386,11 +406,14 @@ public class ItemRepository : IItemRepository
                 Tag = Tag,
                 RequiredLevel = RequiredLevel ?? 0,
                 RequiredClasses = RequiredClasses ?? [],
-                Stats = Stats.Select(stat => stat.ToResponse(filePath)).ToList().AsReadOnly(),
+                Stats = Stats?.Select(stat => stat.ToResponse()).ToList().AsReadOnly() ?? [],
                 Durability = Durability?.ToResponse(),
                 OnUse = OnUse?.ToResponse(),
                 Skills = Skills ?? [],
-                Enhance = Enhance?.ToResponse(filePath)
+                Enhance = Enhance?.ToResponse(filePath),
+                Enchant = Enchant?.ToResponse(),
+                Rune = Rune?.ToResponse(),
+                Transcendence = Transcendence?.Select(t => t.ToResponse(filePath)).ToArray() ?? []
             };
         }
     }
@@ -504,22 +527,16 @@ public class ItemRepository : IItemRepository
 
         public string? Value { get; init; }
 
-        public ItemEquipmentStatResponse ToResponse(string filePath)
+        public string? Random { get; init; }
+
+        public ItemEquipmentStatResponse ToResponse()
         {
-            if (string.IsNullOrWhiteSpace(Status))
-                throw new InvalidOperationException($"equipment.stats[].status is required: {filePath}");
-
-            if (string.IsNullOrWhiteSpace(Type))
-                throw new InvalidOperationException($"equipment.stats[].type is required: {filePath}");
-
-            if (string.IsNullOrWhiteSpace(Value))
-                throw new InvalidOperationException($"equipment.stats[].value is required: {filePath}");
-
             return new ItemEquipmentStatResponse
             {
                 Status = Status,
                 Type = Type,
-                Value = Value
+                Value = Value,
+                Random = Random
             };
         }
     }
@@ -644,6 +661,226 @@ public class ItemRepository : IItemRepository
             {
                 Sound = Sound,
                 Particle = Particle
+            };
+        }
+    }
+
+    private sealed class EquipmentEnchantYamlDocument
+    {
+        public int? MaxSlots { get; init; }
+
+        public List<EquipmentEnchantPoolYamlDocument>? Pools { get; init; }
+
+        public ItemEquipmentEnchantResponse ToResponse()
+        {
+            return new ItemEquipmentEnchantResponse
+            {
+                MaxSlots = MaxSlots ?? 1,
+                Pools = Pools?.Select(p => p.ToResponse()).ToArray() ?? []
+            };
+        }
+    }
+
+    private sealed class EquipmentEnchantPoolYamlDocument
+    {
+        public string? RecipeId { get; init; }
+
+        public EquipmentEnchantPoolMaterialYamlDocument? RequiredMaterial { get; init; }
+
+        public int? RequiredCurrency { get; init; }
+
+        public List<EquipmentEnchantEntryYamlDocument>? Entries { get; init; }
+
+        public ItemEquipmentEnchantPoolResponse ToResponse()
+        {
+            return new ItemEquipmentEnchantPoolResponse
+            {
+                RecipeId = RecipeId,
+                RequiredMaterial = RequiredMaterial?.ToResponse(),
+                RequiredCurrency = RequiredCurrency ?? 0,
+                Entries = Entries?.Select(e => e.ToResponse()).ToArray() ?? []
+            };
+        }
+    }
+
+    private sealed class EquipmentEnchantPoolMaterialYamlDocument
+    {
+        public string? ItemId { get; init; }
+
+        public int? Amount { get; init; }
+
+        public ItemEquipmentEnchantPoolMaterialResponse ToResponse()
+        {
+            return new ItemEquipmentEnchantPoolMaterialResponse
+            {
+                ItemId = ItemId ?? string.Empty,
+                Amount = Amount ?? 1
+            };
+        }
+    }
+
+    private sealed class EquipmentEnchantEntryYamlDocument
+    {
+        public string? Status { get; init; }
+
+        public string? Type { get; init; }
+
+        public string? Value { get; init; }
+
+        public int? Weight { get; init; }
+
+        public ItemEquipmentEnchantEntryResponse ToResponse()
+        {
+            return new ItemEquipmentEnchantEntryResponse
+            {
+                Status = Status,
+                Type = Type,
+                Value = Value,
+                Weight = Weight ?? 1
+            };
+        }
+    }
+
+    private sealed class EquipmentRuneYamlDocument
+    {
+        public string? MaxSlots { get; init; }
+
+        public List<string>? AllowedRuneIds { get; init; }
+
+        public ItemEquipmentRuneResponse ToResponse()
+        {
+            return new ItemEquipmentRuneResponse
+            {
+                MaxSlots = MaxSlots ?? "0",
+                AllowedRuneIds = AllowedRuneIds ?? []
+            };
+        }
+    }
+
+    private sealed class EquipmentTranscendenceYamlDocument
+    {
+        public string? Name { get; init; }
+
+        public int? Rank { get; init; }
+
+        public string? RecipeId { get; init; }
+
+        public List<EquipmentEnhanceMaterialYamlDocument>? RequiredMaterials { get; init; }
+
+        public int? RequiredCurrency { get; init; }
+
+        public EquipmentTranscendenceOverridesYamlDocument? Overrides { get; init; }
+
+        public ItemEquipmentTranscendenceResponse ToResponse(string filePath)
+        {
+            if (Rank is null)
+                throw new InvalidOperationException($"equipment.transcendence[].rank is required: {filePath}");
+
+            return new ItemEquipmentTranscendenceResponse
+            {
+                Name = Name,
+                Rank = Rank.Value,
+                RecipeId = RecipeId,
+                RequiredMaterials = RequiredMaterials?.Select(m => m.ToResponse(filePath)).ToArray() ?? [],
+                RequiredCurrency = RequiredCurrency ?? 0,
+                Overrides = Overrides?.ToResponse()
+            };
+        }
+    }
+
+    private sealed class EquipmentTranscendenceOverridesYamlDocument
+    {
+        public string? Name { get; init; }
+
+        public EquipmentTranscendenceOverridesEnhanceYamlDocument? Enhance { get; init; }
+
+        public EquipmentTranscendenceOverridesEnchantYamlDocument? Enchant { get; init; }
+
+        public EquipmentTranscendenceOverridesRuneYamlDocument? Rune { get; init; }
+
+        public ItemEquipmentTranscendenceOverridesResponse ToResponse()
+        {
+            return new ItemEquipmentTranscendenceOverridesResponse
+            {
+                Name = Name,
+                Enhance = Enhance?.ToResponse(),
+                Enchant = Enchant?.ToResponse(),
+                Rune = Rune?.ToResponse()
+            };
+        }
+    }
+
+    private sealed class EquipmentTranscendenceOverridesEnhanceYamlDocument
+    {
+        public int? MaxLevel { get; init; }
+
+        public ItemEquipmentTranscendenceOverridesEnhanceResponse ToResponse()
+            => new() { MaxLevel = MaxLevel ?? 0 };
+    }
+
+    private sealed class EquipmentTranscendenceOverridesEnchantYamlDocument
+    {
+        public int? MaxSlots { get; init; }
+
+        public ItemEquipmentTranscendenceOverridesEnchantResponse ToResponse()
+            => new() { MaxSlots = MaxSlots ?? 0 };
+    }
+
+    private sealed class EquipmentTranscendenceOverridesRuneYamlDocument
+    {
+        public string? MaxSlots { get; init; }
+
+        public ItemEquipmentTranscendenceOverridesRuneResponse ToResponse()
+            => new() { MaxSlots = MaxSlots ?? "0" };
+    }
+
+    private sealed class RuneItemYamlDocument
+    {
+        public List<string>? TargetSlots { get; init; }
+
+        public int? RequiredEnhanceLevel { get; init; }
+
+        public List<RuneStatYamlDocument>? Stats { get; init; }
+
+        public List<string>? Skills { get; init; }
+
+        public ItemRuneResponse ToResponse(string filePath, string expectedCategory)
+        {
+            if (string.IsNullOrWhiteSpace(expectedCategory)
+                || !string.Equals(expectedCategory, "rune", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"rune section is only valid for category 'rune': {filePath}");
+
+            if (TargetSlots is null || TargetSlots.Count == 0)
+                throw new InvalidOperationException($"rune.targetSlots is required: {filePath}");
+
+            return new ItemRuneResponse
+            {
+                TargetSlots = TargetSlots,
+                RequiredEnhanceLevel = RequiredEnhanceLevel ?? 0,
+                Stats = Stats?.Select(s => s.ToResponse()).ToArray() ?? [],
+                Skills = Skills ?? []
+            };
+        }
+    }
+
+    private sealed class RuneStatYamlDocument
+    {
+        public string? Status { get; init; }
+
+        public string? Type { get; init; }
+
+        public string? Value { get; init; }
+
+        public string? Random { get; init; }
+
+        public ItemRuneStatResponse ToResponse()
+        {
+            return new ItemRuneStatResponse
+            {
+                Status = Status,
+                Type = Type,
+                Value = Value,
+                Random = Random
             };
         }
     }
