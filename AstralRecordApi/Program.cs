@@ -20,8 +20,10 @@ builder.Services.AddDbContext<AstralRecordDbContext>(options =>
         ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured.")));
 
 builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
+builder.Services.AddSingleton<IClassRepository, ClassRepository>();
 builder.Services.AddSingleton<IItemRepository, ItemRepository>();
 builder.Services.AddSingleton<ILootRepository, LootRepository>();
+builder.Services.AddSingleton<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 

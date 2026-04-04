@@ -164,6 +164,7 @@ X-Api-Key: <your-api-key>
 	"equipment": {
 		"slot": "WEAPON",
 		"handType": "ONE",
+		"tag": "SWORD",
 		"requiredLevel": 3,
 		"requiredClasses": [],
 		"stats": [
@@ -188,7 +189,33 @@ X-Api-Key: <your-api-key>
 			"rightClickCooldownTicks": null,
 			"rightClickSkillId": null
 		},
-		"skills": []
+		"skills": [],
+		"enhance": {
+			"maxLevel": 3,
+			"levels": [
+				{
+					"level": 1,
+					"statIncrease": [
+						{
+							"status": "ATTACK",
+							"type": "FLAT",
+							"value": "3"
+						}
+					],
+					"durabilityBonus": 10,
+					"recipeId": null,
+					"requiredMaterials": [
+						{
+							"itemId": "iron_ingot",
+							"amount": 2
+						}
+					],
+					"requiredCurrency": 100,
+					"successRate": 1.0,
+					"failAction": "NONE"
+				}
+			]
+		}
 	}
 }
 ```
@@ -249,6 +276,7 @@ X-Api-Key: <your-api-key>
 	"unSellable": false,
 	"bundle": {
 		"lootTableId": "magic_iron_ingot",
+		"items": [],
 		"onUse": {
 			"sound": "block.anvil.land",
 			"particle": "block_break"
@@ -273,6 +301,51 @@ X-Api-Key: <your-api-key>
 | `lore` | string[] | 説明文 |
 | `unTradeable` | bool | 取引不可フラグ |
 | `unSellable` | bool | 売却不可フラグ |
+
+### equipment フィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `equipment.slot` | string | 装備スロット（WEAPON / SUBWEAPON / HEAD / CHEST / LEGS / FEET / ACCESSORY / TOOL） |
+| `equipment.handType` | string | 手持ち装備の手数（ONE / TWO）。slot=WEAPON の場合に使用 |
+| `equipment.tag` | string \| null | ツール種別・アクセサリ種別などの補助情報 |
+| `equipment.requiredLevel` | int | 装備に必要なプレイヤーレベル（0 で制限なし） |
+| `equipment.requiredClasses` | string[] | 装備可能クラス ID リスト（空の場合は全クラス可） |
+| `equipment.stats[].status` | string | ステータス名（StatusType） |
+| `equipment.stats[].type` | string | 補正方式（FLAT / SCALAR） |
+| `equipment.stats[].value` | string | 補正値（固定値または範囲 例: "1~4"） |
+| `equipment.durability.max` | int \| null | 最大耐久値 |
+| `equipment.durability.consume` | int | 1 回の使用で減る耐久値 |
+| `equipment.onUse.leftClickCooldownTicks` | int \| null | 左クリック使用時クールタイム |
+| `equipment.onUse.leftClickSkillId` | string \| null | 左クリック時に発動するスキル ID |
+| `equipment.onUse.rightClickCooldownTicks` | int \| null | 右クリック使用時クールタイム |
+| `equipment.onUse.rightClickSkillId` | string \| null | 右クリック時に発動するスキル ID |
+| `equipment.skills` | string[] | 装備中に適用されるスキル ID リスト |
+| `equipment.enhance.maxLevel` | int | 強化最大レベル |
+| `equipment.enhance.levels[].level` | int | 強化レベル |
+| `equipment.enhance.levels[].statIncrease[].status` | string | ステータス名 |
+| `equipment.enhance.levels[].statIncrease[].type` | string | 補正方式（FLAT / SCALAR） |
+| `equipment.enhance.levels[].statIncrease[].value` | string | 上昇幅 |
+| `equipment.enhance.levels[].durabilityBonus` | int \| null | このレベルで加算される最大耐久値 |
+| `equipment.enhance.levels[].recipeId` | string \| null | 強化レシピ ID |
+| `equipment.enhance.levels[].requiredMaterials[].itemId` | string | 素材アイテム ID |
+| `equipment.enhance.levels[].requiredMaterials[].amount` | int | 必要数 |
+| `equipment.enhance.levels[].requiredCurrency` | int \| null | 必要通貨量 |
+| `equipment.enhance.levels[].successRate` | float | 強化成功率（0.0 〜 1.0） |
+| `equipment.enhance.levels[].failAction` | string | 失敗時挙動（NONE / DOWNGRADE / DESTROY） |
+
+### bundle フィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `bundle.lootTableId` | string \| null | LootTable ID |
+| `bundle.items[].itemId` | string | 付与するアイテム ID |
+| `bundle.items[].amount` | string | 付与数（固定値または範囲 例: "1~3"） |
+| `bundle.items[].rate` | float | 付与確率（0.00 〜 100.00） |
+| `bundle.items[].luckAffected` | bool | 幸運ステータスによる確率補正を受けるか |
+| `bundle.items[].hidden` | bool | 図鑑などに表示しない秘密ドロップか |
+| `bundle.onUse.sound` | string \| null | 使用時サウンド |
+| `bundle.onUse.particle` | string \| null | 使用時パーティクル |
 
 ### 400 Bad Request
 

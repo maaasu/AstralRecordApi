@@ -79,6 +79,8 @@ public class ItemEquipmentResponse
 
     public string HandType { get; init; } = "ONE";
 
+    public string? Tag { get; init; }
+
     public int RequiredLevel { get; init; }
 
     public IReadOnlyList<string> RequiredClasses { get; init; } = [];
@@ -90,6 +92,50 @@ public class ItemEquipmentResponse
     public ItemEquipmentOnUseResponse? OnUse { get; init; }
 
     public IReadOnlyList<string> Skills { get; init; } = [];
+
+    public ItemEquipmentEnhanceResponse? Enhance { get; init; }
+}
+
+public class ItemEquipmentEnhanceResponse
+{
+    public int MaxLevel { get; init; }
+
+    public IReadOnlyList<ItemEquipmentEnhanceLevelResponse> Levels { get; init; } = [];
+}
+
+public class ItemEquipmentEnhanceLevelResponse
+{
+    public int Level { get; init; }
+
+    public IReadOnlyList<ItemEquipmentEnhanceStatIncreaseResponse> StatIncrease { get; init; } = [];
+
+    public int? DurabilityBonus { get; init; }
+
+    public string? RecipeId { get; init; }
+
+    public IReadOnlyList<ItemEquipmentEnhanceMaterialResponse> RequiredMaterials { get; init; } = [];
+
+    public int? RequiredCurrency { get; init; }
+
+    public float SuccessRate { get; init; } = 1.0f;
+
+    public string FailAction { get; init; } = "NONE";
+}
+
+public class ItemEquipmentEnhanceStatIncreaseResponse
+{
+    public required string Status { get; init; }
+
+    public required string Type { get; init; }
+
+    public required string Value { get; init; }
+}
+
+public class ItemEquipmentEnhanceMaterialResponse
+{
+    public required string ItemId { get; init; }
+
+    public int Amount { get; init; }
 }
 
 public class ItemEquipmentStatResponse
@@ -130,9 +176,24 @@ public class ItemCurrencyResponse
 
 public class ItemBundleResponse
 {
-    public required string LootTableId { get; init; }
+    public string? LootTableId { get; init; }
+
+    public IReadOnlyList<ItemBundleItemResponse> Items { get; init; } = [];
 
     public ItemBundleOnUseResponse? OnUse { get; init; }
+}
+
+public class ItemBundleItemResponse
+{
+    public required string ItemId { get; init; }
+
+    public string Amount { get; init; } = "1";
+
+    public double Rate { get; init; } = 100.0;
+
+    public bool LuckAffected { get; init; }
+
+    public bool Hidden { get; init; }
 }
 
 public class ItemBundleOnUseResponse

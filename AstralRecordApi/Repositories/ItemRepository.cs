@@ -345,6 +345,8 @@ public class ItemRepository : IItemRepository
 
         public string? HandType { get; init; }
 
+        public string? Tag { get; init; }
+
         public int? RequiredLevel { get; init; }
 
         public List<string>? RequiredClasses { get; init; }
@@ -356,6 +358,8 @@ public class ItemRepository : IItemRepository
         public EquipmentOnUseYamlDocument? OnUse { get; init; }
 
         public List<string>? Skills { get; init; }
+
+        public EquipmentEnhanceYamlDocument? Enhance { get; init; }
 
         public ItemEquipmentResponse ToResponse(string filePath, string expectedCategory)
         {
@@ -373,12 +377,115 @@ public class ItemRepository : IItemRepository
             {
                 Slot = Slot,
                 HandType = HandType ?? "ONE",
+                Tag = Tag,
                 RequiredLevel = RequiredLevel ?? 0,
                 RequiredClasses = RequiredClasses ?? [],
                 Stats = Stats.Select(stat => stat.ToResponse(filePath)).ToList().AsReadOnly(),
                 Durability = Durability?.ToResponse(),
                 OnUse = OnUse?.ToResponse(),
-                Skills = Skills ?? []
+                Skills = Skills ?? [],
+                Enhance = Enhance?.ToResponse(filePath)
+            };
+        }
+    }
+
+    private sealed class EquipmentEnhanceYamlDocument
+    {
+        public int? MaxLevel { get; init; }
+
+        public List<EquipmentEnhanceLevelYamlDocument>? Levels { get; init; }
+
+        public ItemEquipmentEnhanceResponse ToResponse(string filePath)
+        {
+            if (MaxLevel is null)
+                throw new InvalidOperationException($"equipment.enhance.maxLevel is required: {filePath}");
+
+            return new ItemEquipmentEnhanceResponse
+            {
+                MaxLevel = MaxLevel.Value,
+                Levels = Levels?.Select(l => l.ToResponse(filePath)).ToArray() ?? []
+            };
+        }
+    }
+
+    private sealed class EquipmentEnhanceLevelYamlDocument
+    {
+        public int? Level { get; init; }
+
+        public List<EquipmentEnhanceStatIncreaseYamlDocument>? StatIncrease { get; init; }
+
+        public int? DurabilityBonus { get; init; }
+
+        public string? RecipeId { get; init; }
+
+        public List<EquipmentEnhanceMaterialYamlDocument>? RequiredMaterials { get; init; }
+
+        public int? RequiredCurrency { get; init; }
+
+        public float? SuccessRate { get; init; }
+
+        public string? FailAction { get; init; }
+
+        public ItemEquipmentEnhanceLevelResponse ToResponse(string filePath)
+        {
+            if (Level is null)
+                throw new InvalidOperationException($"equipment.enhance.levels[].level is required: {filePath}");
+
+            return new ItemEquipmentEnhanceLevelResponse
+            {
+                Level = Level.Value,
+                StatIncrease = StatIncrease?.Select(s => s.ToResponse(filePath)).ToArray() ?? [],
+                DurabilityBonus = DurabilityBonus,
+                RecipeId = RecipeId,
+                RequiredMaterials = RequiredMaterials?.Select(m => m.ToResponse(filePath)).ToArray() ?? [],
+                RequiredCurrency = RequiredCurrency,
+                SuccessRate = SuccessRate ?? 1.0f,
+                FailAction = FailAction ?? "NONE"
+            };
+        }
+    }
+
+    private sealed class EquipmentEnhanceStatIncreaseYamlDocument
+    {
+        public string? Status { get; init; }
+
+        public string? Type { get; init; }
+
+        public string? Value { get; init; }
+
+        public ItemEquipmentEnhanceStatIncreaseResponse ToResponse(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(Status))
+                throw new InvalidOperationException($"equipment.enhance.levels[].statIncrease[].status is required: {filePath}");
+            if (string.IsNullOrWhiteSpace(Type))
+                throw new InvalidOperationException($"equipment.enhance.levels[].statIncrease[].type is required: {filePath}");
+            if (string.IsNullOrWhiteSpace(Value))
+                throw new InvalidOperationException($"equipment.enhance.levels[].statIncrease[].value is required: {filePath}");
+
+            return new ItemEquipmentEnhanceStatIncreaseResponse
+            {
+                Status = Status,
+                Type = Type,
+                Value = Value
+            };
+        }
+    }
+
+    private sealed class EquipmentEnhanceMaterialYamlDocument
+    {
+        public string? ItemId { get; init; }
+
+        public int? Amount { get; init; }
+
+        public ItemEquipmentEnhanceMaterialResponse ToResponse(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(ItemId))
+                throw new InvalidOperationException($"equipment.enhance.levels[].requiredMaterials[].itemId is required: {filePath}");
+
+            return new ItemEquipmentEnhanceMaterialResponse
+            {
+                ItemId = ItemId,
+                Amount = Amount ?? 1
             };
         }
     }
@@ -472,6 +579,8 @@ public class ItemRepository : IItemRepository
     {
         public string? LootTableId { get; init; }
 
+        public List<BundleItemYamlDocument>? Items { get; init; }
+
         public BundleOnUseYamlDocument? OnUse { get; init; }
 
         public ItemBundleResponse ToResponse(string filePath, string expectedCategory)
@@ -480,13 +589,39 @@ public class ItemRepository : IItemRepository
                 || !string.Equals(expectedCategory, "bundle", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"bundle section is only valid for category 'bundle': {filePath}");
 
-            if (string.IsNullOrWhiteSpace(LootTableId))
-                throw new InvalidOperationException($"bundle.lootTableId is required: {filePath}");
-
             return new ItemBundleResponse
             {
                 LootTableId = LootTableId,
+                Items = Items?.Select(i => i.ToResponse(filePath)).ToArray() ?? [],
                 OnUse = OnUse?.ToResponse()
+            };
+        }
+    }
+
+    private sealed class BundleItemYamlDocument
+    {
+        public string? ItemId { get; init; }
+
+        public string? Amount { get; init; }
+
+        public double? Rate { get; init; }
+
+        public bool? LuckAffected { get; init; }
+
+        public bool? Hidden { get; init; }
+
+        public ItemBundleItemResponse ToResponse(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(ItemId))
+                throw new InvalidOperationException($"bundle.items[].itemId is required: {filePath}");
+
+            return new ItemBundleItemResponse
+            {
+                ItemId = ItemId,
+                Amount = Amount ?? "1",
+                Rate = Rate ?? 100.0,
+                LuckAffected = LuckAffected ?? false,
+                Hidden = Hidden ?? false
             };
         }
     }
