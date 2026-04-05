@@ -87,6 +87,8 @@ public class ItemEquipmentResponse
 
     public IReadOnlyList<string> RequiredClasses { get; init; } = [];
 
+    public string? SetId { get; init; }
+
     public IReadOnlyList<ItemEquipmentStatResponse> Stats { get; init; } = [];
 
     public ItemEquipmentDurabilityResponse? Durability { get; init; }

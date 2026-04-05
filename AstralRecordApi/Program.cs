@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
 builder.Services.AddSingleton<IClassRepository, ClassRepository>();
 builder.Services.AddSingleton<IItemRepository, ItemRepository>();
 builder.Services.AddSingleton<ILootRepository, LootRepository>();
+builder.Services.AddSingleton<ISetEffectRepository, SetEffectRepository>();
 builder.Services.AddSingleton<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();

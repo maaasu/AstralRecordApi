@@ -374,6 +374,8 @@ public class ItemRepository : IItemRepository
 
         public List<string>? RequiredClasses { get; init; }
 
+        public string? SetId { get; init; }
+
         public List<EquipmentStatYamlDocument>? Stats { get; init; }
 
         public EquipmentDurabilityYamlDocument? Durability { get; init; }
@@ -406,6 +408,7 @@ public class ItemRepository : IItemRepository
                 Tag = Tag,
                 RequiredLevel = RequiredLevel ?? 0,
                 RequiredClasses = RequiredClasses ?? [],
+                SetId = SetId,
                 Stats = Stats?.Select(stat => stat.ToResponse()).ToList().AsReadOnly() ?? [],
                 Durability = Durability?.ToResponse(),
                 OnUse = OnUse?.ToResponse(),

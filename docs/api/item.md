@@ -399,7 +399,6 @@ X-Api-Key: <your-api-key>
 | `equipment.transcendence[].overrides.name` | string \| null | 状態変化後のアイテム名称 |
 | `equipment.transcendence[].overrides.enhance.maxLevel` | int | 状態変化後の強化最大レベル |
 | `equipment.transcendence[].overrides.enchant.maxSlots` | int | 状態変化後のエンチャント最大スロット数 |
-| `equipment.transcendence[].overrides.rune.maxSlots` | string | 状態変化後のルーン最大スロット数 |
 
 ### rune フィールド
 
