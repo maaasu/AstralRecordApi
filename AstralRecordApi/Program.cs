@@ -32,6 +32,7 @@ builder.Services.AddSingleton<ISetEffectRepository, SetEffectRepository>();
 builder.Services.AddSingleton<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IEquipmentRepository, EquipmentRepository>();
 
 builder.Services.AddAuthentication(ApiKeyAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(

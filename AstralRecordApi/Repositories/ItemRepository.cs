@@ -14,6 +14,7 @@ public class ItemRepository : IItemRepository
     private static readonly HashSet<string> SupportedCategories = new(["material", "consumable", "equipment", "currency", "bundle", "rune"], KeyComparer);
 
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> _itemsByCategory;
+    private readonly IReadOnlyDictionary<string, ItemResponse> _itemsById;
     private readonly IReadOnlyList<ItemSummaryResponse> _itemSummaries;
 
     public ItemRepository(IOptions<FileDatabaseOptions> options, ILogger<ItemRepository> logger)
@@ -24,6 +25,9 @@ public class ItemRepository : IItemRepository
 
         logger.LogInformation("アイテムデータの読み込みを開始します (RootPath: {RootPath})", rootPath);
         _itemsByCategory = LoadItems(rootPath, logger);
+        _itemsById = _itemsByCategory
+            .SelectMany(categoryItems => categoryItems.Value)
+            .ToDictionary(kv => kv.Key, kv => kv.Value, KeyComparer);
         _itemSummaries = _itemsByCategory
             .SelectMany(categoryItems => categoryItems.Value.Values)
             .OrderBy(item => item.Category, KeyComparer)
@@ -39,16 +43,8 @@ public class ItemRepository : IItemRepository
 
     public IReadOnlyList<ItemSummaryResponse> GetAllSummaries() => _itemSummaries;
 
-    public bool IsSupportedCategory(string category)
-        => SupportedCategories.Contains(category);
-
-    public ItemResponse? GetByCategoryAndId(string category, string itemId)
-    {
-        if (!_itemsByCategory.TryGetValue(category, out var items))
-            return null;
-
-        return items.TryGetValue(itemId, out var item) ? item : null;
-    }
+    public ItemResponse? GetById(string itemId)
+        => _itemsById.TryGetValue(itemId, out var item) ? item : null;
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ItemResponse>> LoadItems(string rootPath, ILogger logger)
     {

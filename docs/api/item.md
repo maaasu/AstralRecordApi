@@ -2,7 +2,7 @@
 
 ## 概要
 
-ファイルシステム上のアイテム YAML を起動時にロードし、カテゴリとアイテム ID をキーに取得します。
+ファイルシステム上のアイテム YAML を起動時にロードし、アイテム ID をキーに取得します。
 
 ## エンドポイント
 
@@ -14,7 +14,7 @@
 | 項目 | 値 |
 |---|---|
 | メソッド | GET |
-| パス | `/api/item/{category}/{itemId}` |
+| パス | `/api/item/{itemId}` |
 
 ## 認証
 
@@ -37,19 +37,7 @@ X-Api-Key: <your-api-key>
 
 | パラメータ | 型 | 必須 | 説明 |
 |---|---|---|---|
-| `category` | string | ✓ | アイテムカテゴリ（下記対応リスト参照） |
 | `itemId` | string | ✓ | アイテム ID |
-
-### 対応カテゴリ
-
-| カテゴリ | 説明 |
-|---|---|
-| `material` | 素材アイテム |
-| `consumable` | 消耗品アイテム |
-| `equipment` | 装備品アイテム |
-| `currency` | 通貨・証 |
-| `bundle` | パッケージ・ボックス |
-| `rune` | ルーンアイテム |
 
 ## レスポンス
 
@@ -74,7 +62,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — material
 
 ```http
-GET /api/item/material/iron_ingot
+GET /api/item/iron_ingot
 X-Api-Key: <your-api-key>
 ```
 
@@ -100,7 +88,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — consumable
 
 ```http
-GET /api/item/consumable/haste_potion_small
+GET /api/item/haste_potion_small
 X-Api-Key: <your-api-key>
 ```
 
@@ -143,7 +131,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — equipment
 
 ```http
-GET /api/item/equipment/bronze_sword
+GET /api/item/bronze_sword
 X-Api-Key: <your-api-key>
 ```
 
@@ -229,7 +217,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — currency
 
 ```http
-GET /api/item/currency/boss_proof_golem
+GET /api/item/boss_proof_golem
 X-Api-Key: <your-api-key>
 ```
 
@@ -260,7 +248,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — bundle
 
 ```http
-GET /api/item/bundle/magic_iron_ingot_bundle
+GET /api/item/magic_iron_ingot_bundle
 X-Api-Key: <your-api-key>
 ```
 
@@ -294,7 +282,7 @@ X-Api-Key: <your-api-key>
 ### 200 OK — rune
 
 ```http
-GET /api/item/rune/rune_attack_small
+GET /api/item/rune_attack_small
 X-Api-Key: <your-api-key>
 ```
 
@@ -427,7 +415,7 @@ X-Api-Key: <your-api-key>
 
 ### 400 Bad Request
 
-未対応カテゴリを指定。
+（非推奨）該当エンドポイントは返しません。
 
 ### 401 Unauthorized
 
@@ -435,4 +423,4 @@ API キーが指定されていない、または無効。
 
 ### 404 Not Found
 
-指定カテゴリ内に対象アイテムが存在しない。
+対象アイテムが存在しない。

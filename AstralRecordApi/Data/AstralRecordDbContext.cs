@@ -7,6 +7,9 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
 {
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<AccountEntity> Accounts => Set<AccountEntity>();
+    public DbSet<EquipmentInstanceEntity> EquipmentInstances => Set<EquipmentInstanceEntity>();
+    public DbSet<EquipmentInstanceStatRollEntity> EquipmentInstanceStatRolls => Set<EquipmentInstanceStatRollEntity>();
+    public DbSet<EquipmentInstanceEnchantPoolEntity> EquipmentInstanceEnchantPools => Set<EquipmentInstanceEnchantPoolEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +51,63 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
             entity.Property(account => account.CreatedBy).HasColumnName("created_by");
             entity.Property(account => account.UpdatedBy).HasColumnName("updated_by");
             entity.Property(account => account.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<EquipmentInstanceEntity>(entity =>
+        {
+            entity.ToTable("equipment_instance", "dbo");
+            entity.HasKey(e => e.EquipmentInstanceId);
+
+            entity.Property(e => e.EquipmentInstanceId).HasColumnName("equipment_instance_id");
+            entity.Property(e => e.AccountId).HasColumnName("account_id");
+            entity.Property(e => e.ItemId).HasColumnName("item_id");
+            entity.Property(e => e.EnhanceLevel).HasColumnName("enhance_level");
+            entity.Property(e => e.RuneMaxSlots).HasColumnName("rune_max_slots");
+            entity.Property(e => e.TranscendenceRank).HasColumnName("transcendence_rank");
+            entity.Property(e => e.DurabilityMax).HasColumnName("durability_max");
+            entity.Property(e => e.DurabilityValue).HasColumnName("durability_value");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<EquipmentInstanceStatRollEntity>(entity =>
+        {
+            entity.ToTable("equipment_instance_stat_roll", "dbo");
+            entity.HasKey(e => e.StatRollId);
+
+            entity.Property(e => e.StatRollId).HasColumnName("stat_roll_id");
+            entity.Property(e => e.EquipmentInstanceId).HasColumnName("equipment_instance_id");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.RandomMin).HasColumnName("random_min");
+            entity.Property(e => e.RandomMax).HasColumnName("random_max");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<EquipmentInstanceEnchantPoolEntity>(entity =>
+        {
+            entity.ToTable("equipment_instance_enchant_pool", "dbo");
+            entity.HasKey(e => e.EnchantPoolId);
+
+            entity.Property(e => e.EnchantPoolId).HasColumnName("enchant_pool_id");
+            entity.Property(e => e.EquipmentInstanceId).HasColumnName("equipment_instance_id");
+            entity.Property(e => e.PoolIndex).HasColumnName("pool_index");
+            entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
+            entity.Property(e => e.RequiredMaterialItemId).HasColumnName("required_material_item_id");
+            entity.Property(e => e.RequiredMaterialAmount).HasColumnName("required_material_amount");
+            entity.Property(e => e.RequiredCurrency).HasColumnName("required_currency");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
         });
     }
 }
