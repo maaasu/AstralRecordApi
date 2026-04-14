@@ -1,5 +1,5 @@
 using AstralRecordApi.Models;
-using AstralRecordApi.Repositories;
+using AstralRecordApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AstralRecordApi.Controllers;
@@ -7,7 +7,7 @@ namespace AstralRecordApi.Controllers;
 /// <summary>装備インスタンス API</summary>
 [ApiController]
 [Route("api/equipment")]
-public class EquipmentController(IEquipmentRepository equipmentRepository) : ControllerBase
+public class EquipmentController(IEquipmentService equipmentService) : ControllerBase
 {
     /// <summary>装備インスタンス作成</summary>
     /// <remarks>
@@ -22,7 +22,7 @@ public class EquipmentController(IEquipmentRepository equipmentRepository) : Con
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Create([FromBody] EquipmentCreateRequest request)
     {
-        var created = await equipmentRepository.CreateAsync(request);
+        var created = await equipmentService.CreateAsync(request);
         if (created is null)
             return NotFound();
 
@@ -40,7 +40,7 @@ public class EquipmentController(IEquipmentRepository equipmentRepository) : Con
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByInstanceId(Guid instanceId)
     {
-        var instance = await equipmentRepository.GetByInstanceIdAsync(instanceId);
+        var instance = await equipmentService.GetByInstanceIdAsync(instanceId);
         if (instance is null)
             return NotFound();
 

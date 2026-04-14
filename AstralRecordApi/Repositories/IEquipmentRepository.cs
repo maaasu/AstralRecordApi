@@ -1,17 +1,29 @@
-using AstralRecordApi.Models;
+using AstralRecordApi.Data.Entities;
 
 namespace AstralRecordApi.Repositories;
 
 public interface IEquipmentRepository
 {
     /// <summary>
-    /// マスタデータをもとに装備インスタンスを生成して DB に保存する。
-    /// <para><paramref name="request"/> の <c>EquipmentId</c> が存在しない、または equipment カテゴリでない場合は <c>null</c> を返す。</para>
+    /// 装備インスタンスと関連エンティティを DB に保存する。
     /// </summary>
-    Task<EquipmentInstanceResponse?> CreateAsync(EquipmentCreateRequest request);
+    Task AddAsync(
+        EquipmentInstanceEntity instance,
+        IReadOnlyList<EquipmentInstanceStatRollEntity> statRolls,
+        IReadOnlyList<EquipmentInstanceEnchantPoolEntity> enchantPools);
 
     /// <summary>
-    /// 指定した装備インスタンス ID のデータを取得する。論理削除済みは返さない。
+    /// 指定した装備インスタンス ID のエンティティを返す。論理削除済みは返さない。
     /// </summary>
-    Task<EquipmentInstanceResponse?> GetByInstanceIdAsync(Guid instanceId);
+    Task<EquipmentInstanceEntity?> FindInstanceAsync(Guid instanceId);
+
+    /// <summary>
+    /// 指定した装備インスタンスに紐づくステータス乱数ロールを返す。
+    /// </summary>
+    Task<IReadOnlyList<EquipmentInstanceStatRollEntity>> FindStatRollsAsync(Guid instanceId);
+
+    /// <summary>
+    /// 指定した装備インスタンスに紐づくエンチャントプールを返す。
+    /// </summary>
+    Task<IReadOnlyList<EquipmentInstanceEnchantPoolEntity>> FindEnchantPoolsAsync(Guid instanceId);
 }
