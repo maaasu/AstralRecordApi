@@ -38,6 +38,8 @@ Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record と関
 | GET /api/item/{itemId} | アイテム取得 | [docs/api/item.md](docs/api/item.md) |
 | POST /api/equipment/instances | 装備インスタンス作成 | [docs/api/equipment.md](docs/api/equipment.md) |
 | GET /api/equipment/instances/{instanceId} | 装備インスタンス取得 | [docs/api/equipment.md](docs/api/equipment.md) |
+| GET /api/recipe | レシピ一覧取得（最小項目） | [docs/api/recipe.md](docs/api/recipe.md) |
+| GET /api/recipe/{recipeId} | レシピ取得 | [docs/api/recipe.md](docs/api/recipe.md) |
 | GET /api/class | クラス一覧取得（最小項目） | [docs/api/class.md](docs/api/class.md) |
 | GET /api/class/{classId} | クラス取得 | [docs/api/class.md](docs/api/class.md) |
 | GET /api/skill | スキル一覧取得（最小項目） | [docs/api/skill.md](docs/api/skill.md) |

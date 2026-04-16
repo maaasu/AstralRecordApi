@@ -41,7 +41,7 @@ public class EquipmentService(IItemRepository itemRepository, IEquipmentReposito
             IsDeleted = false,
         };
 
-        // ステータス乱数ロールの構築（random フィールドを持つ stat のみ）
+        // ステータス個体差ロールの構築（value.min / value.max に範囲候補を持つ stat のみ）
         var statRolls = BuildStatRolls(instanceId, equipment.Stats, request.CreatedBy, now);
 
         // エンチャントプールの構築（個体生成時点のプール構成）
@@ -76,11 +76,16 @@ public class EquipmentService(IItemRepository itemRepository, IEquipmentReposito
 
         foreach (var stat in stats)
         {
-            if (stat.Status is null || stat.Random is null)
+            if (stat.Status is null || stat.Value is null)
                 continue;
 
-            var tildeIndex = stat.Random.IndexOf('~');
-            if (tildeIndex < 0)
+            var min = stat.Value.Min.Trim();
+            var max = stat.Value.Max.Trim();
+
+            if (string.IsNullOrWhiteSpace(min) || string.IsNullOrWhiteSpace(max))
+                continue;
+
+            if (!min.Contains('~') && !max.Contains('~'))
                 continue;
 
             result.Add(new EquipmentInstanceStatRollEntity
@@ -88,8 +93,8 @@ public class EquipmentService(IItemRepository itemRepository, IEquipmentReposito
                 StatRollId = Guid.NewGuid(),
                 EquipmentInstanceId = instanceId,
                 Status = stat.Status,
-                RandomMin = stat.Random[..tildeIndex],
-                RandomMax = stat.Random[(tildeIndex + 1)..],
+                RandomMin = min,
+                RandomMax = max,
                 SortOrder = sortOrder++,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -155,13 +160,12 @@ public class EquipmentService(IItemRepository itemRepository, IEquipmentReposito
         {
             StatRollId = r.StatRollId,
             Status = r.Status,
-            RandomMin = r.RandomMin,
-            RandomMax = r.RandomMax,
+            Min = r.RandomMin,
+            Max = r.RandomMax,
             SortOrder = r.SortOrder,
         }).ToList(),
         EnchantPools = enchantPools.Select(p => new EquipmentInstanceEnchantPoolResponse
         {
-            EnchantPoolId = p.EnchantPoolId,
             PoolIndex = p.PoolIndex,
             RecipeId = p.RecipeId,
             RequiredMaterialItemId = p.RequiredMaterialItemId,

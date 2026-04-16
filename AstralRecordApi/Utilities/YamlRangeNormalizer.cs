@@ -65,11 +65,16 @@ public static class YamlRangeNormalizer
                     {
                         var minVal = next1["min: ".Length..].Trim();
                         var maxVal = next2["max: ".Length..].Trim();
-                        var indent = line[..(line.Length - trimmed.Length)];
-                        var key = trimmed.TrimEnd(':');
-                        result.Add($"{indent}{key}: {minVal}~{maxVal}");
-                        i += 2;
-                        continue;
+
+                        // min / max 自体が範囲値を持つ場合はオブジェクト構造を維持する。
+                        if (!minVal.Contains('~') && !maxVal.Contains('~'))
+                        {
+                            var indent = line[..(line.Length - trimmed.Length)];
+                            var key = trimmed.TrimEnd(':');
+                            result.Add($"{indent}{key}: {minVal}~{maxVal}");
+                            i += 2;
+                            continue;
+                        }
                     }
                 }
             }

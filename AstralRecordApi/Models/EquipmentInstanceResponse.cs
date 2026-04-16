@@ -20,14 +20,13 @@ public class EquipmentInstanceStatRollResponse
 {
     public Guid StatRollId { get; init; }
     public string Status { get; init; } = string.Empty;
-    public string RandomMin { get; init; } = string.Empty;
-    public string RandomMax { get; init; } = string.Empty;
+    public string Min { get; init; } = string.Empty;
+    public string Max { get; init; } = string.Empty;
     public int SortOrder { get; init; }
 }
 
 public class EquipmentInstanceEnchantPoolResponse
 {
-    public Guid EnchantPoolId { get; init; }
     public int PoolIndex { get; init; }
     public string? RecipeId { get; init; }
     public string? RequiredMaterialItemId { get; init; }

@@ -2,6 +2,7 @@ using AstralRecordApi.Models;
 using AstralRecordApi.Options;
 using AstralRecordApi.Utilities;
 using Microsoft.Extensions.Options;
+using System.Collections;
 using System.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -405,7 +406,7 @@ public class ItemRepository : IItemRepository
                 RequiredLevel = RequiredLevel ?? 0,
                 RequiredClasses = RequiredClasses ?? [],
                 SetId = SetId,
-                Stats = Stats?.Select(stat => stat.ToResponse()).ToList().AsReadOnly() ?? [],
+                Stats = Stats?.Select(stat => stat.ToResponse(filePath)).ToList().AsReadOnly() ?? [],
                 Durability = Durability?.ToResponse(),
                 OnUse = OnUse?.ToResponse(),
                 Skills = Skills ?? [],
@@ -524,19 +525,76 @@ public class ItemRepository : IItemRepository
 
         public string? Type { get; init; }
 
-        public string? Value { get; init; }
+        public object? Value { get; init; }
 
-        public string? Random { get; init; }
-
-        public ItemEquipmentStatResponse ToResponse()
+        public ItemEquipmentStatResponse ToResponse(string filePath)
         {
             return new ItemEquipmentStatResponse
             {
                 Status = Status,
                 Type = Type,
-                Value = Value,
-                Random = Random
+                Value = EquipmentStatValueYamlDocument.Parse(Value, filePath)
             };
+        }
+    }
+
+    private sealed class EquipmentStatValueYamlDocument
+    {
+        public static ItemEquipmentStatValueResponse? Parse(object? value, string filePath)
+        {
+            if (value is null)
+                return null;
+
+            if (value is string scalar)
+                return FromScalar(scalar, filePath);
+
+            if (value is IDictionary map)
+            {
+                var min = GetString(map, "min");
+                var max = GetString(map, "max");
+
+                if (string.IsNullOrWhiteSpace(min) || string.IsNullOrWhiteSpace(max))
+                    throw new InvalidOperationException($"equipment.stats[].value.min and max are required when object syntax is used: {filePath}");
+
+                return new ItemEquipmentStatValueResponse
+                {
+                    Min = min,
+                    Max = max
+                };
+            }
+
+            throw new InvalidOperationException($"equipment.stats[].value has unsupported format: {filePath}");
+        }
+
+        private static ItemEquipmentStatValueResponse FromScalar(string value, string filePath)
+        {
+            var trimmed = value.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+                throw new InvalidOperationException($"equipment.stats[].value must not be empty: {filePath}");
+
+            var tildeIndex = trimmed.IndexOf('~');
+            return tildeIndex >= 0
+                ? new ItemEquipmentStatValueResponse
+                {
+                    Min = trimmed[..tildeIndex].Trim(),
+                    Max = trimmed[(tildeIndex + 1)..].Trim()
+                }
+                : new ItemEquipmentStatValueResponse
+                {
+                    Min = trimmed,
+                    Max = trimmed
+                };
+        }
+
+        private static string? GetString(IDictionary map, string key)
+        {
+            foreach (DictionaryEntry entry in map)
+            {
+                if (string.Equals(entry.Key?.ToString(), key, StringComparison.OrdinalIgnoreCase))
+                    return entry.Value?.ToString()?.Trim();
+            }
+
+            return null;
         }
     }
 

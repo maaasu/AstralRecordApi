@@ -29,6 +29,7 @@ builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
 builder.Services.AddSingleton<IClassRepository, ClassRepository>();
 builder.Services.AddSingleton<IItemRepository, ItemRepository>();
 builder.Services.AddSingleton<ILootRepository, LootRepository>();
+builder.Services.AddSingleton<IRecipeRepository, RecipeRepository>();
 builder.Services.AddSingleton<ISetEffectRepository, SetEffectRepository>();
 builder.Services.AddSingleton<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -100,6 +101,7 @@ logger.LogInformation("静的データの読み込みを開始します");
 _ = app.Services.GetRequiredService<IBuffRepository>();
 _ = app.Services.GetRequiredService<IItemRepository>();
 _ = app.Services.GetRequiredService<ILootRepository>();
+_ = app.Services.GetRequiredService<IRecipeRepository>();
 logger.LogInformation("静的データの読み込みが完了しました");
 
 app.Run();

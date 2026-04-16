@@ -22,7 +22,7 @@
 ### 概要
 
 YAML マスタデータをもとに装備の個別動的データを生成して `dbo.equipment_instance` テーブルに保存します。  
-ルーンスロット数のランダム確定・ステータス乱数ロールの保存・エンチャントプール構成の保存をサーバー側で行います。
+ルーンスロット数のランダム確定・ステータス下限値/上限値候補の保存・エンチャントプール構成の保存をサーバー側で行います。
 
 ### リクエスト
 
@@ -70,14 +70,13 @@ X-Api-Key: <your-api-key>
 		{
 			"statRollId": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
 			"status": "ATTACK",
-			"randomMin": "50",
-			"randomMax": "100",
+			"min": "10~20",
+			"max": "21~50",
 			"sortOrder": 0
 		}
 	],
 	"enchantPools": [
 		{
-			"enchantPoolId": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
 			"poolIndex": 0,
 			"recipeId": "enchant_fire_sword_1",
 			"requiredMaterialItemId": "fire_essence",
@@ -100,24 +99,23 @@ X-Api-Key: <your-api-key>
 | `durabilityValue` | int \| null | 現在耐久値（耐久管理対象のときのみ） |
 | `createdAt` | datetime | レコード作成日時（UTC） |
 | `updatedAt` | datetime | レコード最終更新日時（UTC） |
-| `statRolls` | array | ステータス乱数ロール一覧（`random` フィールドを持つ stat のみ） |
+| `statRolls` | array | ステータス下限値/上限値候補一覧（`value.min / value.max` に範囲候補を持つ stat のみ） |
 | `enchantPools` | array | エンチャントプール一覧（YAML の `enchant.pools[]` に対応） |
 
 #### statRolls 要素
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `statRollId` | GUID | ステータス乱数レコード UUID |
+| `statRollId` | GUID | ステータス候補レコード UUID |
 | `status` | string | 対象ステータス（例: `ATTACK`） |
-| `randomMin` | string | YAML 由来の乱数最小値 |
-| `randomMax` | string | YAML 由来の乱数最大値 |
+| `min` | string | YAML 由来の下限値候補 |
+| `max` | string | YAML 由来の上限値候補 |
 | `sortOrder` | int | YAML 内の定義順（0 始まり） |
 
 #### enchantPools 要素
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `enchantPoolId` | GUID | エンチャントプールレコード UUID |
 | `poolIndex` | int | YAML 内プール順序（0 始まり） |
 | `recipeId` | string \| null | レシピ参照 ID |
 | `requiredMaterialItemId` | string \| null | 必要素材の itemId |

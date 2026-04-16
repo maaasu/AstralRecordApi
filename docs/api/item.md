@@ -346,8 +346,9 @@ X-Api-Key: <your-api-key>
 | `equipment.requiredClasses` | string[] | 装備可能クラス ID リスト（空の場合は全クラス可） |
 | `equipment.stats[].status` | string \| null | ステータス名（StatusType） |
 | `equipment.stats[].type` | string \| null | 補正方式（FLAT / SCALAR） |
-| `equipment.stats[].value` | string \| null | 補正値（固定値または範囲 例: "1~4"） |
-| `equipment.stats[].random` | string \| null | 装備作成時のランダム変動幅（例: "-10~10"） |
+| `equipment.stats[].value` | object \| null | ステータスの下限値/上限値 |
+| `equipment.stats[].value.min` | string \| null | 下限値。固定値または範囲（例: "10", "10~20"） |
+| `equipment.stats[].value.max` | string \| null | 上限値。固定値または範囲（例: "21", "21~50"） |
 | `equipment.durability.max` | int \| null | 最大耐久値 |
 | `equipment.durability.consume` | int | 1 回の使用で減る耐久値 |
 | `equipment.onUse.leftClickCooldownTicks` | int \| null | 左クリック使用時クールタイム |

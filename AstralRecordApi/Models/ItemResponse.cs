@@ -154,9 +154,14 @@ public class ItemEquipmentStatResponse
 
     public string? Type { get; init; }
 
-    public string? Value { get; init; }
+    public ItemEquipmentStatValueResponse? Value { get; init; }
+}
 
-    public string? Random { get; init; }
+public class ItemEquipmentStatValueResponse
+{
+    public string Min { get; init; } = string.Empty;
+
+    public string Max { get; init; } = string.Empty;
 }
 
 public class ItemEquipmentDurabilityResponse
