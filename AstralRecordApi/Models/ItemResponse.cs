@@ -180,6 +180,10 @@ public class ItemEquipmentEnchantResponse
 
 public class ItemEquipmentEnchantPoolResponse
 {
+    public int PoolIndex { get; init; }
+
+    public string? Id { get; init; }
+
     public string? RecipeId { get; init; }
 
     public ItemEquipmentEnchantPoolMaterialResponse? RequiredMaterial { get; init; }

@@ -369,6 +369,8 @@ X-Api-Key: <your-api-key>
 | `equipment.enhance.levels[].successRate` | float | 強化成功率（0.0 〜 1.0） |
 | `equipment.enhance.levels[].failAction` | string | 失敗時挙動（NONE / DOWNGRADE / DESTROY） |
 | `equipment.enchant.maxSlots` | int | エンチャント最大スロット数 |
+| `equipment.enchant.pools[].poolIndex` | int | API レスポンス上で自動採番されたプール番号（0 始まり） |
+| `equipment.enchant.pools[].id` | string \| null | 任意のプール識別子 |
 | `equipment.enchant.pools[].recipeId` | string \| null | エンチャントプール使用レシピ ID |
 | `equipment.enchant.pools[].requiredMaterial.itemId` | string | プール発動に必要な素材アイテム ID |
 | `equipment.enchant.pools[].requiredMaterial.amount` | int | 必要な素材個数 |
@@ -377,7 +379,7 @@ X-Api-Key: <your-api-key>
 | `equipment.enchant.pools[].entries[].type` | string \| null | 補正方式（FLAT / SCALAR） |
 | `equipment.enchant.pools[].entries[].value` | string \| null | 付与値（固定値または範囲） |
 | `equipment.enchant.pools[].entries[].weight` | int | 抽選重み（値が大きいほど選ばれやすい） |
-| `equipment.rune.maxSlots` | string | 最大ルーンスロット数（固定値または範囲 例: "2", "1~3"） |
+| `equipment.rune.maxSlots` | string | 最大ルーンスロット数。固定値に加えて YAML の random 指定も "1~3" 形式で返却 |
 | `equipment.rune.allowedRuneIds` | string[] | 装着を許可するルーン ID リスト（空の場合は全ルーン許可） |
 | `equipment.transcendence[].name` | string \| null | 状態変化の名称（例: "進化"） |
 | `equipment.transcendence[].rank` | int | 状態変化の強さ指標 |

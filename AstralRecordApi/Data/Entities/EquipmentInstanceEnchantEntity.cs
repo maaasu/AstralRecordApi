@@ -1,13 +1,14 @@
 namespace AstralRecordApi.Data.Entities;
 
-public class EquipmentInstanceStatRollEntity
+public class EquipmentInstanceEnchantEntity
 {
-    public Guid StatRollId { get; set; }
+    public Guid EnchantId { get; set; }
     public Guid EquipmentInstanceId { get; set; }
+    public int SlotIndex { get; set; }
+    public int PoolIndex { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string RandomMin { get; set; } = string.Empty;
-    public string RandomMax { get; set; } = string.Empty;
-    public int SortOrder { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public decimal Value { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public Guid CreatedBy { get; set; }

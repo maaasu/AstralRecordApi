@@ -4,6 +4,8 @@ using AstralRecordApi.Options;
 using AstralRecordApi.Repositories;
 using AstralRecordApi.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -23,7 +25,10 @@ builder.Services.Configure<FileDatabaseOptions>(
 builder.Services.AddDbContext<AstralRecordDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("SqlServer")
-        ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured.")));
+        ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured."),
+        sqlServerOptions => sqlServerOptions.EnableRetryOnFailure()));
+
+builder.Services.AddProblemDetails();
 
 builder.Services.AddSingleton<IBuffRepository, BuffRepository>();
 builder.Services.AddSingleton<IClassRepository, ClassRepository>();
@@ -35,7 +40,9 @@ builder.Services.AddSingleton<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IEquipmentRepository, EquipmentRepository>();
+builder.Services.AddScoped<IRuneRepository, RuneRepository>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
+builder.Services.AddScoped<IRuneService, RuneService>();
 
 builder.Services.AddAuthentication(ApiKeyAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
@@ -77,6 +84,32 @@ var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
 
+app.UseExceptionHandler(handler =>
+{
+    handler.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+        if (IsDatabaseUnavailable(exception))
+        {
+            logger.LogError(exception, "データベース接続に失敗しました");
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            await Results.Problem(
+                title: "Database unavailable",
+                detail: "SQL Server に接続できないため、リクエストを処理できません。接続文字列と DB 状態を確認してください。",
+                statusCode: StatusCodes.Status503ServiceUnavailable).ExecuteAsync(context);
+            return;
+        }
+
+        logger.LogError(exception, "未処理の例外が発生しました");
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await Results.Problem(
+            title: "Internal server error",
+            detail: "サーバー内部で予期しないエラーが発生しました。",
+            statusCode: StatusCodes.Status500InternalServerError).ExecuteAsync(context);
+    });
+});
+
 // OpenAPI ドキュメント (/openapi/v1.json)
 app.MapOpenApi();
 
@@ -105,3 +138,25 @@ _ = app.Services.GetRequiredService<IRecipeRepository>();
 logger.LogInformation("静的データの読み込みが完了しました");
 
 app.Run();
+
+static bool IsDatabaseUnavailable(Exception? exception)
+{
+    if (exception is null)
+        return false;
+
+    if (exception is SqlException sqlException)
+    {
+        return sqlException.Number is 4060 or 18456 or -2 or 53;
+    }
+
+    if (exception is Microsoft.EntityFrameworkCore.Storage.RetryLimitExceededException retryLimitExceededException)
+        return IsDatabaseUnavailable(retryLimitExceededException.InnerException);
+
+    if (exception is DbUpdateException dbUpdateException)
+        return IsDatabaseUnavailable(dbUpdateException.InnerException);
+
+    if (exception is InvalidOperationException invalidOperationException)
+        return IsDatabaseUnavailable(invalidOperationException.InnerException);
+
+    return IsDatabaseUnavailable(exception.InnerException);
+}

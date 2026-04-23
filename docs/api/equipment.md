@@ -6,6 +6,12 @@
 |---|---|---|
 | POST | `/api/equipment/instances` | 装備インスタンス作成 |
 | GET | `/api/equipment/instances/{instanceId}` | 装備インスタンス取得 |
+| POST | `/api/equipment/enchant` | エンチャント実施 |
+| DELETE | `/api/equipment/enchant` | エンチャント削除 |
+| POST | `/api/equipment/enhance` | 強化実施 |
+| POST | `/api/equipment/transcendence` | 状態変化実施 |
+| POST | `/api/equipment/rune` | ルーン装着 |
+| DELETE | `/api/equipment/rune` | ルーン脱着 |
 
 ## 認証
 
@@ -21,8 +27,9 @@
 
 ### 概要
 
-YAML マスタデータをもとに装備の個別動的データを生成して `dbo.equipment_instance` テーブルに保存します。  
-ルーンスロット数のランダム確定・ステータス下限値/上限値候補の保存・エンチャントプール構成の保存をサーバー側で行います。
+YAML マスタデータをもとに装備の個別動的データを生成して保存します。  
+ステータス乱数ロールは作成時に実値へ解決され、レスポンスには現在のエンチャント一覧も含まれます。  
+存在しない accountId や equipmentId を指定した場合は 404 を返します。
 
 ### リクエスト
 
@@ -34,134 +41,185 @@ X-Api-Key: <your-api-key>
 
 ```json
 {
-	"equipmentId": "iron_sword",
-	"accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-	"source": "loot_drop",
-	"createdBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  "equipmentId": "sample_sword",
+  "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "source": "loot_drop",
+  "createdBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|---|---|---|---|
-| `equipmentId` | string | ✓ | YAML マスタの装備 ID（`category: equipment` のアイテム） |
-| `accountId` | GUID | ✓ | 所有アカウントの UUID |
-| `source` | string | | 生成元の識別子（例: `loot_drop`, `quest_reward`） |
-| `createdBy` | GUID | ✓ | 作成者の UUID（通常はアカウント UUID と同一） |
-
-### レスポンス
-
-#### 201 Created
-
-装備インスタンス作成成功。作成された装備インスタンスのデータと `Location` ヘッダーを返します。
+### 201 Created
 
 ```json
 {
-	"equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
-	"accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-	"itemId": "iron_sword",
-	"enhanceLevel": 0,
-	"runeMaxSlots": 2,
-	"transcendenceRank": 0,
-	"durabilityMax": 100,
-	"durabilityValue": 100,
-	"createdAt": "2026-04-11T12:00:00Z",
-	"updatedAt": "2026-04-11T12:00:00Z",
-	"statRolls": [
-		{
-			"statRollId": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
-			"status": "ATTACK",
-			"min": "10~20",
-			"max": "21~50",
-			"sortOrder": 0
-		}
-	],
-	"enchantPools": [
-		{
-			"poolIndex": 0,
-			"recipeId": "enchant_fire_sword_1",
-			"requiredMaterialItemId": "fire_essence",
-			"requiredMaterialAmount": 3,
-			"requiredCurrency": 1000
-		}
-	]
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "itemId": "sample_sword",
+  "enhanceLevel": 0,
+  "runeMaxSlots": 2,
+  "transcendenceRank": 0,
+  "durabilityMax": 220,
+  "durabilityValue": 220,
+  "createdAt": "2026-04-19T12:00:00Z",
+  "updatedAt": "2026-04-19T12:00:00Z",
+  "statRolls": [
+    {
+      "statRollId": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+      "status": "ATTACK",
+      "min": "27",
+      "max": "38",
+      "sortOrder": 0
+    }
+  ],
+  "enchants": [],
+  "runes": [],
+  "enchantPools": [
+    {
+      "poolIndex": 0,
+      "recipeId": null,
+      "requiredMaterialItemId": "magic_crystal",
+      "requiredMaterialAmount": 2,
+      "requiredCurrency": 500
+    }
+  ]
 }
 ```
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `equipmentInstanceId` | GUID | 生成された装備個体 UUID |
-| `accountId` | GUID | 所有アカウント UUID |
-| `itemId` | string | YAML マスタの装備 ID |
-| `enhanceLevel` | int | 強化レベル（初期値 `0`） |
-| `runeMaxSlots` | int | 生成時に確定したルーン最大スロット数 |
-| `transcendenceRank` | int | 段階変化ランク（初期値 `0`） |
-| `durabilityMax` | int \| null | 耐久上限（YAML に `durability.max` がある場合のみ） |
-| `durabilityValue` | int \| null | 現在耐久値（耐久管理対象のときのみ） |
-| `createdAt` | datetime | レコード作成日時（UTC） |
-| `updatedAt` | datetime | レコード最終更新日時（UTC） |
-| `statRolls` | array | ステータス下限値/上限値候補一覧（`value.min / value.max` に範囲候補を持つ stat のみ） |
-| `enchantPools` | array | エンチャントプール一覧（YAML の `enchant.pools[]` に対応） |
-
-#### statRolls 要素
+### レスポンス主要項目
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `statRollId` | GUID | ステータス候補レコード UUID |
-| `status` | string | 対象ステータス（例: `ATTACK`） |
-| `min` | string | YAML 由来の下限値候補 |
-| `max` | string | YAML 由来の上限値候補 |
-| `sortOrder` | int | YAML 内の定義順（0 始まり） |
+| `transcendenceRank` | int | 現在の状態変化ランクです。`0` は未状態変化を表し、`1` 以上になると YAML の `equipment.transcendence[].rank` に応じた段階が適用されます。 |
+| `statRolls[].min` | string | 作成時に確定した乱数下限値、または固定値ステータスの値です。 |
+| `statRolls[].max` | string | 作成時に確定した乱数上限値、または固定値ステータスの値です。 |
+| `enchants` | array | 現在付与済みのエンチャント一覧 |
+| `runes` | array | 現在装着中のルーン一覧 |
+| `enchantPools` | array | 参照用プール構成一覧 |
 
-#### enchantPools 要素
+> `transcendenceRank` は個体の進行状態を保持する値で、状態変化後の有効な強化上限・エンチャント枠・ルーン枠の判定に利用されます。
+
+### enchants 要素
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `poolIndex` | int | YAML 内プール順序（0 始まり） |
-| `recipeId` | string \| null | レシピ参照 ID |
-| `requiredMaterialItemId` | string \| null | 必要素材の itemId |
-| `requiredMaterialAmount` | int | 必要素材数（デフォルト `1`） |
-| `requiredCurrency` | int | 必要通貨（デフォルト `0`） |
+| `enchantId` | GUID | エンチャントレコード ID |
+| `equipmentInstanceId` | GUID | 対象装備個体 ID |
+| `slotIndex` | int | 実際に使用しているスロット番号 |
+| `poolIndex` | int | どのエンチャントプールから付与されたか |
+| `status` | string | 付与ステータス |
+| `type` | string | 補正方式 |
+| `value` | decimal | 実際に確定した付与値 |
 
-#### 404 Not Found
+### runes 要素
 
-指定した `equipmentId` が存在しない、または `category: equipment` ではない。
-
-#### 401 Unauthorized
-
-API キーが指定されていない、または無効。
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `runeId` | GUID | ルーン装着レコード ID |
+| `runeInstanceId` | GUID \| null | 紐づくルーン個体 ID |
+| `equipmentInstanceId` | GUID | 対象装備個体 ID |
+| `slotIndex` | int | ルーンスロット番号 |
+| `itemId` | string | 装着中のルーン itemId |
 
 ---
 
 ## GET /api/equipment/instances/{instanceId}
 
+装備インスタンスを取得します。レスポンス形式は作成 API と同一です。
+
+---
+
+## POST /api/equipment/enchant
+
 ### 概要
 
-`dbo.equipment_instance` テーブルから装備個体 UUID をキーにインスタンス情報を取得します。  
-論理削除済みのインスタンスは取得できません。
+指定した `poolIndex` のプールから重み付き抽選で 1 エントリーを選び、装備へエンチャントを付与します。  
+空きスロットがあればそこを使用し、上限到達時は既存エンチャントをランダムに 1 件上書きします。
 
-### リクエスト
-
-#### パスパラメータ
-
-| パラメータ | 型 | 必須 | 説明 |
-|---|---|---|---|
-| `instanceId` | GUID | ✓ | 装備インスタンスの UUID |
-
-```http
-GET /api/equipment/instances/f1e2d3c4-b5a6-7890-fedc-ba0987654321
-X-Api-Key: <your-api-key>
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "poolIndex": 0,
+  "updatedBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
 ```
 
-### レスポンス
+---
 
-#### 200 OK
+## DELETE /api/equipment/enchant
 
-装備インスタンス取得成功。レスポンス形式は `POST /api/equipment/instances` の 201 レスポンスと同一。
+### 概要
 
-#### 404 Not Found
+指定した `poolIndex` の現在エンチャントを物理削除します。
 
-指定 UUID の装備インスタンスが存在しない、または論理削除済み。
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "poolIndex": 0
+}
+```
 
-#### 401 Unauthorized
+---
 
-API キーが指定されていない、または無効。
+## POST /api/equipment/enhance
+
+### 概要
+
+装備を 1 段階、または指定レベルまで強化します。
+
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "targetLevel": 1,
+  "updatedBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+---
+
+## POST /api/equipment/transcendence
+
+### 概要
+
+装備を次の状態変化ランク、または指定ランクへ更新します。
+`targetRank` には現在の `transcendenceRank` より大きい値を指定します。`0` は未状態変化で、ランク上昇後は YAML の `equipment.transcendence[].overrides` に基づいて有効な強化上限・エンチャント枠・ルーン枠の扱いが変化します。
+
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "targetRank": 1,
+  "updatedBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+---
+
+## POST /api/equipment/rune
+
+### 概要
+
+ルーンを装着します。slotIndex 未指定時は空きスロットへ自動装着し、指定時はそのスロットを更新します。
+
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "runeInstanceId": "11111111-2222-3333-4444-555555555555",
+  "runeItemId": "rune_attack_small",
+  "slotIndex": 0,
+  "updatedBy": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+---
+
+## DELETE /api/equipment/rune
+
+### 概要
+
+指定スロットのルーンを物理削除します。
+
+```json
+{
+  "equipmentInstanceId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+  "slotIndex": 0
+}
+```

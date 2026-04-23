@@ -14,4 +14,16 @@ public interface IEquipmentService
     /// 指定した装備インスタンス ID のデータを取得する。論理削除済みは返さない。
     /// </summary>
     Task<EquipmentInstanceResponse?> GetByInstanceIdAsync(Guid instanceId);
+
+    Task<EquipmentInstanceResponse?> EnchantAsync(EquipmentEnchantRequest request);
+
+    Task<EquipmentInstanceResponse?> DeleteEnchantAsync(EquipmentEnchantDeleteRequest request);
+
+    Task<EquipmentInstanceResponse?> EnhanceAsync(EquipmentEnhanceRequest request);
+
+    Task<EquipmentInstanceResponse?> TranscendAsync(EquipmentTranscendenceRequest request);
+
+    Task<EquipmentInstanceResponse?> AttachRuneAsync(EquipmentRuneAttachRequest request);
+
+    Task<EquipmentInstanceResponse?> DetachRuneAsync(EquipmentRuneDetachRequest request);
 }

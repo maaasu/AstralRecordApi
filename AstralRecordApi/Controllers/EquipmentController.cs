@@ -16,7 +16,7 @@ public class EquipmentController(IEquipmentService equipmentService) : Controlle
     /// </remarks>
     /// <param name="request">作成リクエスト</param>
     /// <response code="201">装備インスタンス作成成功</response>
-    /// <response code="404">指定した equipmentId が存在しない、または equipment カテゴリではない</response>
+    /// <response code="404">指定した equipmentId または accountId が存在しない、または equipment カテゴリではない</response>
     [HttpPost("instances")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -41,6 +41,84 @@ public class EquipmentController(IEquipmentService equipmentService) : Controlle
     public async Task<IActionResult> GetByInstanceId(Guid instanceId)
     {
         var instance = await equipmentService.GetByInstanceIdAsync(instanceId);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    [HttpPost("enchant")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enchant([FromBody] EquipmentEnchantRequest request)
+    {
+        var instance = await equipmentService.EnchantAsync(request);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    [HttpDelete("enchant")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEnchant([FromBody] EquipmentEnchantDeleteRequest request)
+    {
+        var instance = await equipmentService.DeleteEnchantAsync(request);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    [HttpPost("enhance")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enhance([FromBody] EquipmentEnhanceRequest request)
+    {
+        var instance = await equipmentService.EnhanceAsync(request);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    [HttpPost("transcendence")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Transcend([FromBody] EquipmentTranscendenceRequest request)
+    {
+        var instance = await equipmentService.TranscendAsync(request);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    /// <summary>ルーン装着</summary>
+    /// <response code="200">ルーン装着成功</response>
+    /// <response code="404">対象装備または対象ルーンが存在しない、あるいは装着条件を満たさない</response>
+    [HttpPost("rune")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AttachRune([FromBody] EquipmentRuneAttachRequest request)
+    {
+        var instance = await equipmentService.AttachRuneAsync(request);
+        if (instance is null)
+            return NotFound();
+
+        return Ok(instance);
+    }
+
+    /// <summary>ルーン脱着</summary>
+    /// <response code="200">ルーン脱着成功</response>
+    /// <response code="404">対象装備または対象スロットのルーンが存在しない</response>
+    [HttpDelete("rune")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DetachRune([FromBody] EquipmentRuneDetachRequest request)
+    {
+        var instance = await equipmentService.DetachRuneAsync(request);
         if (instance is null)
             return NotFound();
 

@@ -38,6 +38,14 @@ Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record と関
 | GET /api/item/{itemId} | アイテム取得 | [docs/api/item.md](docs/api/item.md) |
 | POST /api/equipment/instances | 装備インスタンス作成 | [docs/api/equipment.md](docs/api/equipment.md) |
 | GET /api/equipment/instances/{instanceId} | 装備インスタンス取得 | [docs/api/equipment.md](docs/api/equipment.md) |
+| POST /api/equipment/enchant | エンチャント実施 | [docs/api/equipment.md](docs/api/equipment.md) |
+| DELETE /api/equipment/enchant | エンチャント削除 | [docs/api/equipment.md](docs/api/equipment.md) |
+| POST /api/equipment/enhance | 装備強化 | [docs/api/equipment.md](docs/api/equipment.md) |
+| POST /api/equipment/transcendence | 状態変化実施 | [docs/api/equipment.md](docs/api/equipment.md) |
+| POST /api/equipment/rune | ルーン装着 | [docs/api/equipment.md](docs/api/equipment.md) |
+| DELETE /api/equipment/rune | ルーン脱着 | [docs/api/equipment.md](docs/api/equipment.md) |
+| POST /api/rune/instances | ルーンインスタンス作成 | [docs/api/rune.md](docs/api/rune.md) |
+| GET /api/rune/instances/{instanceId} | ルーンインスタンス取得 | [docs/api/rune.md](docs/api/rune.md) |
 | GET /api/recipe | レシピ一覧取得（最小項目） | [docs/api/recipe.md](docs/api/recipe.md) |
 | GET /api/recipe/{recipeId} | レシピ取得 | [docs/api/recipe.md](docs/api/recipe.md) |
 | GET /api/class | クラス一覧取得（最小項目） | [docs/api/class.md](docs/api/class.md) |

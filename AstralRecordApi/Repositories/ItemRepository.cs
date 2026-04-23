@@ -733,13 +733,15 @@ public class ItemRepository : IItemRepository
             return new ItemEquipmentEnchantResponse
             {
                 MaxSlots = MaxSlots ?? 1,
-                Pools = Pools?.Select(p => p.ToResponse()).ToArray() ?? []
+                Pools = Pools?.Select((p, index) => p.ToResponse(index)).ToArray() ?? []
             };
         }
     }
 
     private sealed class EquipmentEnchantPoolYamlDocument
     {
+        public string? Id { get; init; }
+
         public string? RecipeId { get; init; }
 
         public EquipmentEnchantPoolMaterialYamlDocument? RequiredMaterial { get; init; }
@@ -748,10 +750,12 @@ public class ItemRepository : IItemRepository
 
         public List<EquipmentEnchantEntryYamlDocument>? Entries { get; init; }
 
-        public ItemEquipmentEnchantPoolResponse ToResponse()
+        public ItemEquipmentEnchantPoolResponse ToResponse(int poolIndex)
         {
             return new ItemEquipmentEnchantPoolResponse
             {
+                PoolIndex = poolIndex,
+                Id = Id,
                 RecipeId = RecipeId,
                 RequiredMaterial = RequiredMaterial?.ToResponse(),
                 RequiredCurrency = RequiredCurrency ?? 0,
@@ -800,7 +804,7 @@ public class ItemRepository : IItemRepository
 
     private sealed class EquipmentRuneYamlDocument
     {
-        public string? MaxSlots { get; init; }
+        public object? MaxSlots { get; init; }
 
         public List<string>? AllowedRuneIds { get; init; }
 
@@ -808,9 +812,35 @@ public class ItemRepository : IItemRepository
         {
             return new ItemEquipmentRuneResponse
             {
-                MaxSlots = MaxSlots ?? "0",
+                MaxSlots = ParseMaxSlots(MaxSlots),
                 AllowedRuneIds = AllowedRuneIds ?? []
             };
+        }
+
+        private static string ParseMaxSlots(object? value)
+        {
+            if (value is null)
+                return "0";
+
+            if (value is string scalar)
+                return scalar.Trim();
+
+            if (value is int intValue)
+                return intValue.ToString();
+
+            if (value is long longValue)
+                return longValue.ToString();
+
+            if (value is IDictionary map)
+            {
+                foreach (DictionaryEntry entry in map)
+                {
+                    if (string.Equals(entry.Key?.ToString(), "random", StringComparison.OrdinalIgnoreCase))
+                        return entry.Value?.ToString()?.Trim() ?? "0";
+                }
+            }
+
+            return value.ToString()?.Trim() ?? "0";
         }
     }
 
