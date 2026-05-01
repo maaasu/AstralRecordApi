@@ -7,6 +7,8 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
 {
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<AccountEntity> Accounts => Set<AccountEntity>();
+    public DbSet<InventoryEntity> Inventories => Set<InventoryEntity>();
+    public DbSet<InventoryEntryEntity> InventoryEntries => Set<InventoryEntryEntity>();
     public DbSet<EquipmentInstanceEntity> EquipmentInstances => Set<EquipmentInstanceEntity>();
     public DbSet<EquipmentInstanceStatRollEntity> EquipmentInstanceStatRolls => Set<EquipmentInstanceStatRollEntity>();
     public DbSet<EquipmentInstanceEnchantEntity> EquipmentInstanceEnchants => Set<EquipmentInstanceEnchantEntity>();
@@ -55,6 +57,45 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
             entity.Property(account => account.CreatedBy).HasColumnName("created_by");
             entity.Property(account => account.UpdatedBy).HasColumnName("updated_by");
             entity.Property(account => account.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<InventoryEntity>(entity =>
+        {
+            entity.ToTable("inventory", "dbo");
+            entity.HasKey(inventory => inventory.InventoryId);
+
+            entity.Property(inventory => inventory.InventoryId).HasColumnName("inventory_id");
+            entity.Property(inventory => inventory.AccountId).HasColumnName("account_id");
+            entity.Property(inventory => inventory.InventoryType).HasColumnName("inventory_type");
+            entity.Property(inventory => inventory.SlotCapacity).HasColumnName("slot_capacity");
+            entity.Property(inventory => inventory.IsEnabled).HasColumnName("is_enabled");
+            entity.Property(inventory => inventory.MetadataJson).HasColumnName("metadata_json");
+            entity.Property(inventory => inventory.CreatedAt).HasColumnName("created_at");
+            entity.Property(inventory => inventory.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(inventory => inventory.CreatedBy).HasColumnName("created_by");
+            entity.Property(inventory => inventory.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(inventory => inventory.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<InventoryEntryEntity>(entity =>
+        {
+            entity.ToTable("inventory_entry", "dbo");
+            entity.HasKey(entry => entry.InventoryEntryId);
+
+            entity.Property(entry => entry.InventoryEntryId).HasColumnName("inventory_entry_id");
+            entity.Property(entry => entry.InventoryId).HasColumnName("inventory_id");
+            entity.Property(entry => entry.SlotIndex).HasColumnName("slot_index");
+            entity.Property(entry => entry.ItemCategory).HasColumnName("item_category");
+            entity.Property(entry => entry.ItemId).HasColumnName("item_id");
+            entity.Property(entry => entry.InstanceType).HasColumnName("instance_type");
+            entity.Property(entry => entry.InstanceId).HasColumnName("instance_id");
+            entity.Property(entry => entry.Quantity).HasColumnName("quantity");
+            entity.Property(entry => entry.MetadataJson).HasColumnName("metadata_json");
+            entity.Property(entry => entry.CreatedAt).HasColumnName("created_at");
+            entity.Property(entry => entry.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(entry => entry.CreatedBy).HasColumnName("created_by");
+            entity.Property(entry => entry.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(entry => entry.IsDeleted).HasColumnName("is_deleted");
         });
 
         modelBuilder.Entity<EquipmentInstanceEntity>(entity =>
