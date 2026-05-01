@@ -1,38 +1,39 @@
-# Astral Record API - Copilot Instructions
+# AstralRecordApi Guide
 
-## プロジェクト概要
+対象: `AstralRecordApi/AstralRecordApi/`
 
-本プロジェクトは、Minecraft PurpurサーバのMMO RPGプラグイン **Astral Record** と、そのWebサイトに対してデータベース情報を送信するための **Web API** プロジェクトです。
+## 役割
 
-## データベース構造
+- Plugin や Web が利用する REST API を管理する。
+- SQL Server とアプリケーションの間の契約を提供する。
 
-データは以下の2種類に分類して管理しています。
+## ディレクトリ方針
 
-### 静的データ（マスタデータ）
-- アイテム、クエストなどのマスタデータ
-- YAMLなどのファイルで管理
+- `Controllers/`
+  - エンドポイント定義のみを置く。
+- `Models/`
+  - Request / Response DTO のみを置く。
+- `Data/Entities/`
+  - DB Entity を置く。
+- `Repositories/`
+  - `I<Feature>Repository` と `<Feature>Repository` をセットで置く。
+- `Authentication/`, `Options/`, `Utilities/`
+  - 認証、設定、共通処理を扱う。
 
-### 動的データ（プレイヤー情報など）
-- プレイヤーの進捗・状態など実行時に変化するデータ
-- **SQL Server** で管理
+## 実装方針
 
-## DB構造の詳細
-
-DB構造の詳細定義は以下のGitHubプロジェクトのREADME.mdを参照してください。
-
-- **プロジェクトURL**: https://github.com/maaasu/Database
-- **参照ファイル**: README.md（基本情報セクション）
-
-## 技術スタック
-
-- **ランタイム**: .NET 10
-- **フレームワーク**: ASP.NET Core Web API
-- **データベース**: SQL Server
+- Repository パターンを守る。
+- Controller から直接 DB 詳細を扱わない。
+- DTO と Entity を混在させない。
+- 認証は既存の `ApiKeyAuthenticationHandler` に合わせる。
 
 ## ドキュメント運用
 
-開発ルールの詳細は [README.md](../README.md) の「開発ルール」セクションを参照してください。
+- API を追加・変更したら `README.md` を更新する。
+- 詳細資料がある場合は `docs/api/` も更新する。
+- Plugin や Database との契約変更なら関連資料も見直す。
 
-要約:
-- API を追加・変更・削除した場合は `docs/api/*.md`、コントローラーの XML doc コメント、`README.md` の一覧テーブルをすべて更新すること
-- Scalar API UI は `/scalar` で確認できる（サーバー起動後）
+## 補助プロンプト
+
+- `.agents/prompts/api.md`
+  - API 追加・変更時の更新手順、関連確認、ドキュメント同期ルールを扱う。
