@@ -67,6 +67,7 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
             entity.Property(inventory => inventory.InventoryId).HasColumnName("inventory_id");
             entity.Property(inventory => inventory.AccountId).HasColumnName("account_id");
             entity.Property(inventory => inventory.InventoryType).HasColumnName("inventory_type");
+            entity.Property(inventory => inventory.InventoryProfile).HasColumnName("inventory_profile");
             entity.Property(inventory => inventory.SlotCapacity).HasColumnName("slot_capacity");
             entity.Property(inventory => inventory.IsEnabled).HasColumnName("is_enabled");
             entity.Property(inventory => inventory.MetadataJson).HasColumnName("metadata_json");

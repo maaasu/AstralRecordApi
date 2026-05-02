@@ -1,7 +1,7 @@
-# Inventory API
+﻿# Inventory API
 
-`inventory` / `inventory_entry` を扱う API です。  
-インベントリ種別は DB マスタではなく、プラグイン側のコード定義を前提にしています。
+`inventory` / `inventory_entry` を扱う API です。
+インベントリの用途分離は `inventoryProfile`（`GAME` / `BUILDER`）で管理します。
 
 ## エンドポイント一覧
 
@@ -23,6 +23,7 @@
 - `inventoryId`
 - `accountId`
 - `inventoryType`
+- `inventoryProfile` (`GAME` / `BUILDER`)
 - `slotCapacity`
 - `isEnabled`
 - `metadataJson`
@@ -41,12 +42,12 @@
 
 ## ペイロードルール
 
-- スタック型アイテムは `itemId` を使用する
-- インスタンス参照型アイテムは `instanceType` と `instanceId` を使用する
+- スタックアイテムは `itemId` を使用する
+- インスタンス系アイテムは `instanceType` と `instanceId` を使用する
 - `itemId` と `instanceType` / `instanceId` は同時使用しない
 - `quantity` は `1` 以上
 
 ## 備考
 
-- `inventoryType` の妥当性は API 単体ではマスタ参照せず、呼び出し元のプラグイン側コード定義と合わせて扱う
-- `EQUIPMENT` / `RUNE` / 将来の `PET` などは `instanceType` + `instanceId` で拡張する想定
+- `inventoryType` の妥当性は API 単体ではマスタ参照しないため、呼び出し元の定義と合わせて扱います
+- バニラ `ItemStack` の詳細は `inventory_entry.metadataJson` に保存する運用を想定します

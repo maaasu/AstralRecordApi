@@ -5,6 +5,7 @@ public class InventoryEntity
     public Guid InventoryId { get; set; }
     public Guid AccountId { get; set; }
     public string InventoryType { get; set; } = string.Empty;
+    public string InventoryProfile { get; set; } = "GAME";
     public int? SlotCapacity { get; set; }
     public bool IsEnabled { get; set; }
     public string? MetadataJson { get; set; }

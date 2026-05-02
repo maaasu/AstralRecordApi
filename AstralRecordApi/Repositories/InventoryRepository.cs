@@ -35,6 +35,7 @@ public class InventoryRepository(AstralRecordDbContext dbContext) : IInventoryRe
             InventoryId = Guid.NewGuid(),
             AccountId = request.AccountId,
             InventoryType = request.InventoryType,
+            InventoryProfile = request.InventoryProfile,
             SlotCapacity = request.SlotCapacity,
             IsEnabled = request.IsEnabled ?? true,
             MetadataJson = request.MetadataJson,
@@ -63,6 +64,9 @@ public class InventoryRepository(AstralRecordDbContext dbContext) : IInventoryRe
 
         if (request.IsEnabled.HasValue)
             entity.IsEnabled = request.IsEnabled.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.InventoryProfile))
+            entity.InventoryProfile = request.InventoryProfile;
 
         entity.MetadataJson = request.MetadataJson;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -156,6 +160,7 @@ public class InventoryRepository(AstralRecordDbContext dbContext) : IInventoryRe
         InventoryId = entity.InventoryId,
         AccountId = entity.AccountId,
         InventoryType = entity.InventoryType,
+        InventoryProfile = entity.InventoryProfile,
         SlotCapacity = entity.SlotCapacity,
         IsEnabled = entity.IsEnabled,
         MetadataJson = entity.MetadataJson,

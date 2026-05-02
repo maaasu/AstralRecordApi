@@ -4,6 +4,7 @@ public class InventoryCreateRequest
 {
     public Guid AccountId { get; set; }
     public required string InventoryType { get; set; }
+    public required string InventoryProfile { get; set; }
     public int? SlotCapacity { get; set; }
     public bool? IsEnabled { get; set; }
     public string? MetadataJson { get; set; }
@@ -12,6 +13,7 @@ public class InventoryCreateRequest
 
 public class InventoryUpdateRequest
 {
+    public string? InventoryProfile { get; set; }
     public int? SlotCapacity { get; set; }
     public bool? IsEnabled { get; set; }
     public string? MetadataJson { get; set; }
@@ -23,6 +25,7 @@ public class InventoryResponse
     public Guid InventoryId { get; init; }
     public Guid AccountId { get; init; }
     public string InventoryType { get; init; } = string.Empty;
+    public string InventoryProfile { get; init; } = string.Empty;
     public int? SlotCapacity { get; init; }
     public bool IsEnabled { get; init; }
     public string? MetadataJson { get; init; }
