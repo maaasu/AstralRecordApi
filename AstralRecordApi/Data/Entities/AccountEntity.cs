@@ -8,6 +8,7 @@ public class AccountEntity
     public int SlotIndex { get; set; }
     public bool IsActive { get; set; }
     public byte Mode { get; set; }
+    public string MenuShortcutsJson { get; set; } = """["INVENTORY_NORMAL","INVENTORY_EQUIPMENT","INVENTORY_RUNE","INVENTORY_CURRENCY"]""";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public Guid CreatedBy { get; set; }

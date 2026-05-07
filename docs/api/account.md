@@ -51,6 +51,7 @@ X-Api-Key: <your-api-key>
 	"slotIndex": 0,
 	"isActive": true,
 	"mode": 0,
+	"menuShortcutsJson": "[\"INVENTORY_NORMAL\",\"INVENTORY_EQUIPMENT\",\"INVENTORY_RUNE\",\"INVENTORY_CURRENCY\"]",
 	"createdAt": "2026-03-09T12:34:56",
 	"updatedAt": "2026-03-20T18:45:12",
 	"createdBy": "8d8d3d63-6c25-4bde-bf75-6ee3d3f26c46",
@@ -138,6 +139,7 @@ X-Api-Key: <your-api-key>
 	"accountName": "NewCharacterName",
 	"isActive": true,
 	"mode": null,
+	"menuShortcutsJson": null,
 	"updatedBy": "8d8d3d63-6c25-4bde-bf75-6ee3d3f26c46"
 }
 ```
@@ -147,6 +149,7 @@ X-Api-Key: <your-api-key>
 | `accountName` | string \| null | | キャラクター名 |
 | `isActive` | bool \| null | | 選択中フラグ |
 | `mode` | int \| null | | 権限モード（0: プレイヤー / 1: ビルダー / 2: 管理者） |
+| `menuShortcutsJson` | string \| null | | 2x2 craft shortcut settings JSON array |
 | `updatedBy` | GUID | ✓ | 更新者の UUID |
 
 ### レスポンス
@@ -175,6 +178,7 @@ API キーが指定されていない、または無効。
 | `slotIndex` | int | スロット番号（0 始まり） |
 | `isActive` | bool | 選択中フラグ（true: 選択中） |
 | `mode` | int | 権限モード（0: プレイヤー / 1: ビルダー / 2: 管理者） |
+| `menuShortcutsJson` | string | 2x2 craft shortcut settings JSON array |
 | `createdAt` | string (ISO 8601) | レコード作成日時 |
 | `updatedAt` | string (ISO 8601) | レコード更新日時 |
 | `createdBy` | GUID | 作成者 UUID |

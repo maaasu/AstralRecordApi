@@ -155,6 +155,22 @@ public class InventoryRepository(AstralRecordDbContext dbContext) : IInventoryRe
         return MapEntry(entity);
     }
 
+    public async Task<bool?> DeleteEntryAsync(Guid inventoryEntryId, Guid updatedBy)
+    {
+        var entity = await dbContext.InventoryEntries
+            .FirstOrDefaultAsync(x => x.InventoryEntryId == inventoryEntryId && !x.IsDeleted);
+
+        if (entity is null)
+            return null;
+
+        entity.IsDeleted = true;
+        entity.UpdatedAt = DateTime.UtcNow;
+        entity.UpdatedBy = updatedBy;
+
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
+
     private static InventoryResponse MapInventory(InventoryEntity entity) => new()
     {
         InventoryId = entity.InventoryId,

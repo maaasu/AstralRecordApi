@@ -42,6 +42,7 @@ Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record と連
 | GET `/api/inventory/entries/{inventoryEntryId}` | インベントリエントリ取得 | [docs/api/inventory.md](docs/api/inventory.md) |
 | POST `/api/inventory/{inventoryId}/entries` | インベントリエントリ作成 | [docs/api/inventory.md](docs/api/inventory.md) |
 | PUT `/api/inventory/entries/{inventoryEntryId}` | インベントリエントリ更新 | [docs/api/inventory.md](docs/api/inventory.md) |
+| DELETE `/api/inventory/entries/{inventoryEntryId}` | インベントリエントリ削除 | [docs/api/inventory.md](docs/api/inventory.md) |
 | GET `/api/item` | アイテム一覧取得 | [docs/api/item.md](docs/api/item.md) |
 | GET `/api/item/{itemId}` | アイテム取得 | [docs/api/item.md](docs/api/item.md) |
 | POST `/api/equipment/instances` | 装備インスタンス作成 | [docs/api/equipment.md](docs/api/equipment.md) |
@@ -52,6 +53,15 @@ Minecraft Purpur サーバー向け MMO RPG プラグイン Astral Record と連
 | POST `/api/equipment/transcendence` | 超越適用 | [docs/api/equipment.md](docs/api/equipment.md) |
 | POST `/api/equipment/rune` | ルーン装着 | [docs/api/equipment.md](docs/api/equipment.md) |
 | DELETE `/api/equipment/rune` | ルーン解除 | [docs/api/equipment.md](docs/api/equipment.md) |
+| GET `/api/equipment/loadouts?account_id={account_id}` | 装備プリセット一覧取得 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| GET `/api/equipment/loadouts/{loadoutId}` | 装備プリセット取得 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| POST `/api/equipment/loadouts` | 装備プリセット作成 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| PUT `/api/equipment/loadouts/{loadoutId}` | 装備プリセット更新 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| DELETE `/api/equipment/loadouts/{loadoutId}` | 装備プリセット削除 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| POST `/api/equipment/loadouts/{loadoutId}/activate` | 装備プリセット有効化 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| GET `/api/equipment/loadouts/{loadoutId}/slots` | 装備プリセットスロット一覧取得 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| PUT `/api/equipment/loadouts/{loadoutId}/slots` | 装備プリセットスロット登録・更新 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
+| DELETE `/api/equipment/loadouts/{loadoutId}/slots/{slotType}/{slotIndex}` | 装備プリセットスロット解除 | [docs/api/equipment-loadout.md](docs/api/equipment-loadout.md) |
 | POST `/api/rune/instances` | ルーンインスタンス作成 | [docs/api/rune.md](docs/api/rune.md) |
 | GET `/api/rune/instances/{instanceId}` | ルーンインスタンス取得 | [docs/api/rune.md](docs/api/rune.md) |
 | GET `/api/recipe` | レシピ一覧取得 | [docs/api/recipe.md](docs/api/recipe.md) |

@@ -15,6 +15,7 @@
 | GET | `/api/inventory/entries/{inventoryEntryId}` | インベントリエントリを取得 |
 | POST | `/api/inventory/{inventoryId}/entries` | インベントリエントリを作成 |
 | PUT | `/api/inventory/entries/{inventoryEntryId}` | インベントリエントリを更新 |
+| DELETE | `/api/inventory/entries/{inventoryEntryId}?updated_by={updatedBy}` | インベントリエントリを論理削除 |
 
 ## モデル概要
 

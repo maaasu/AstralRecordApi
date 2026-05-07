@@ -10,6 +10,8 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
     public DbSet<InventoryEntity> Inventories => Set<InventoryEntity>();
     public DbSet<InventoryEntryEntity> InventoryEntries => Set<InventoryEntryEntity>();
     public DbSet<EquipmentInstanceEntity> EquipmentInstances => Set<EquipmentInstanceEntity>();
+    public DbSet<EquipmentLoadoutEntity> EquipmentLoadouts => Set<EquipmentLoadoutEntity>();
+    public DbSet<EquipmentLoadoutSlotEntity> EquipmentLoadoutSlots => Set<EquipmentLoadoutSlotEntity>();
     public DbSet<EquipmentInstanceStatRollEntity> EquipmentInstanceStatRolls => Set<EquipmentInstanceStatRollEntity>();
     public DbSet<EquipmentInstanceEnchantEntity> EquipmentInstanceEnchants => Set<EquipmentInstanceEnchantEntity>();
     public DbSet<EquipmentInstanceRuneEntity> EquipmentInstanceRunes => Set<EquipmentInstanceRuneEntity>();
@@ -52,6 +54,7 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
             entity.Property(account => account.SlotIndex).HasColumnName("slot_index");
             entity.Property(account => account.IsActive).HasColumnName("is_active");
             entity.Property(account => account.Mode).HasColumnName("mode");
+            entity.Property(account => account.MenuShortcutsJson).HasColumnName("menu_shortcuts_json");
             entity.Property(account => account.CreatedAt).HasColumnName("created_at");
             entity.Property(account => account.UpdatedAt).HasColumnName("updated_at");
             entity.Property(account => account.CreatedBy).HasColumnName("created_by");
@@ -112,6 +115,42 @@ public class AstralRecordDbContext(DbContextOptions<AstralRecordDbContext> optio
             entity.Property(e => e.TranscendenceRank).HasColumnName("transcendence_rank");
             entity.Property(e => e.DurabilityMax).HasColumnName("durability_max");
             entity.Property(e => e.DurabilityValue).HasColumnName("durability_value");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<EquipmentLoadoutEntity>(entity =>
+        {
+            entity.ToTable("equipment_loadout", "dbo");
+            entity.HasKey(e => e.EquipmentLoadoutId);
+
+            entity.Property(e => e.EquipmentLoadoutId).HasColumnName("equipment_loadout_id");
+            entity.Property(e => e.AccountId).HasColumnName("account_id");
+            entity.Property(e => e.LoadoutProfile).HasColumnName("loadout_profile");
+            entity.Property(e => e.LoadoutName).HasColumnName("loadout_name");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.MetadataJson).HasColumnName("metadata_json");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        });
+
+        modelBuilder.Entity<EquipmentLoadoutSlotEntity>(entity =>
+        {
+            entity.ToTable("equipment_loadout_slot", "dbo");
+            entity.HasKey(e => e.EquipmentLoadoutSlotId);
+
+            entity.Property(e => e.EquipmentLoadoutSlotId).HasColumnName("equipment_loadout_slot_id");
+            entity.Property(e => e.EquipmentLoadoutId).HasColumnName("equipment_loadout_id");
+            entity.Property(e => e.SlotType).HasColumnName("slot_type");
+            entity.Property(e => e.SlotIndex).HasColumnName("slot_index");
+            entity.Property(e => e.EquipmentInstanceId).HasColumnName("equipment_instance_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             entity.Property(e => e.CreatedBy).HasColumnName("created_by");

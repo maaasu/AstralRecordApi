@@ -68,6 +68,9 @@ public class AccountRepository(AstralRecordDbContext dbContext) : IAccountReposi
         if (request.Mode.HasValue)
             account.Mode = request.Mode.Value;
 
+        if (request.MenuShortcutsJson is not null)
+            account.MenuShortcutsJson = request.MenuShortcutsJson;
+
         account.UpdatedAt = DateTime.UtcNow;
         account.UpdatedBy = request.UpdatedBy;
 
@@ -84,6 +87,7 @@ public class AccountRepository(AstralRecordDbContext dbContext) : IAccountReposi
         SlotIndex = account.SlotIndex,
         IsActive = account.IsActive,
         Mode = account.Mode,
+        MenuShortcutsJson = account.MenuShortcutsJson,
         CreatedAt = account.CreatedAt,
         UpdatedAt = account.UpdatedAt,
         CreatedBy = account.CreatedBy,

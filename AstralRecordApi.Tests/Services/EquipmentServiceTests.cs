@@ -209,6 +209,7 @@ public class EquipmentServiceTests
                 slot_index INTEGER NOT NULL,
                 is_active INTEGER NOT NULL,
                 mode INTEGER NOT NULL,
+                menu_shortcuts_json TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 created_by TEXT NOT NULL,

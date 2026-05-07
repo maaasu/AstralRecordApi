@@ -100,6 +100,18 @@ public class InventoryController(IInventoryRepository inventoryRepository) : Con
         return Ok(updated);
     }
 
+    [HttpDelete("entries/{inventoryEntryId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEntry(Guid inventoryEntryId, [FromQuery(Name = "updated_by")] Guid updatedBy)
+    {
+        var deleted = await inventoryRepository.DeleteEntryAsync(inventoryEntryId, updatedBy);
+        if (deleted is null or false)
+            return NotFound();
+
+        return NoContent();
+    }
+
     private static bool HasValidPayload(string? itemId, string? instanceType, Guid? instanceId)
     {
         var hasItemPayload = !string.IsNullOrWhiteSpace(itemId);
