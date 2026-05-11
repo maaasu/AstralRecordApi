@@ -1,4 +1,4 @@
-﻿# Inventory API
+# Inventory API
 
 `inventory` / `inventory_entry` を扱う API です。
 インベントリの用途分離は `inventoryProfile`（`GAME` / `BUILDER`）で管理します。
